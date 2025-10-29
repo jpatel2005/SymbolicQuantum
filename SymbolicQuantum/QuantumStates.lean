@@ -9,7 +9,9 @@ deriving DecidableEq, Inhabited, Repr
 -- represent a bitstring as a function from indices to qubits
 def BitString (n : Nat) := Fin n → Qubit
 
-def QState (n : ℕ) := BitString n → ℂ
+instance {n : ℕ} : DecidableEq (BitString n) := inferInstanceAs (DecidableEq (Fin n → Qubit))
+
+def QState (n : ℕ) : Type := BitString n → ℂ
 
 -- Define negation and scalar multiplication for QState
 
@@ -209,24 +211,7 @@ theorem YZ_iX {n : ℕ} (ψ : QState n) (k : Fin n) : (app_Z (app_Y ψ k) k) = C
 
 -- tricky
 theorem ZX_iY {n : ℕ} (ψ : QState n) (k : Fin n) : (app_X (app_Z ψ k) k) = Complex.I * (app_Y ψ k) := by {
-  funext bs
-  unfold app_X app_Y app_Z
-  -- funext bs
-  -- unfold app_H
-  -- have hij' : j ≠ i := by rw [ne_eq]; exact hij.symm
-  simp_all
   sorry
-  -- cases hi : (bs k) <;> simp
-  -- all_goals {
-    -- ring_nf
-    -- field_simp
-    -- simp [sub_eq_add_neg, add_assoc, add_comm, add_left_comm]
-    -- congr
-    -- all_goals {
-    --   funext k
-    --   by_cases hk : k = i <;> simp [hk, hij]
-    -- }
-  -- }
 }
 
 theorem CNOT_involutive {n : ℕ} (ψ : QState n) (i j : Fin n) (h : i ≠ j) : app_CNOT (app_CNOT ψ i j) i j = ψ := by {
@@ -437,6 +422,24 @@ theorem H_comm {n : ℕ} (ψ : QState n) {i j : Fin n} (hij : i ≠ j) : (app_H 
   all_goals {
     field_simp
     simp [sub_eq_add_neg, add_assoc, add_comm, add_left_comm]
+    congr
+    all_goals {
+      funext k
+      by_cases hk : k = i <;> simp [hk, hij]
+    }
+  }
+}
+
+theorem HX_comm {n : ℕ} (ψ : QState n) {i j : Fin n} (hij : i ≠ j) : (app_H (app_X ψ i) j) = (app_X (app_H ψ j) i) := by {
+  funext bs
+  unfold app_H app_X
+  have hij' : j ≠ i := by rw [ne_eq]; exact hij.symm
+  simp_all
+  ring_nf
+  cases hi : (bs i) <;> (cases hj : (bs j) <;> simp)
+  all_goals {
+    field_simp
+    simp [sub_eq_add_neg, add_comm]
     congr
     all_goals {
       funext k

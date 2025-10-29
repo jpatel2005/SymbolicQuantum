@@ -1,6 +1,6 @@
 import Mathlib.Data.Real.Sqrt
 import Mathlib.Data.Complex.Basic
-import SymbolicQuantum.BasisStates
+import SymbolicQuantum.QuantumStates
 
 inductive QGate (n : ℕ)
 | X : (Fin n) → QGate n
@@ -30,10 +30,8 @@ noncomputable def Qeval {n : ℕ} : QCircuit n → QState n → QState n
 | (app g)   => fun ψ => Qeval_gate g ψ
 | (seq a b) => fun ψ => (Qeval b) ((Qeval a) ψ)
 
-attribute [irreducible] Qeval
-
 def equiv {n : ℕ} (c1 c2 : QCircuit n) : Prop :=
-  ∀ (ψ : QState n), Qeval c1 ψ = Qeval c2 ψ
+  ∀ ψ, Qeval c1 ψ = Qeval c2 ψ
 
 -- Define operator notation
 notation "〚" c "〛" => Qeval c
@@ -65,7 +63,7 @@ theorem equiv_trans {n : ℕ} {c₁ c₂ c₃ : QCircuit n} : (c₁ ≡ c₂) �
 theorem seq_assoc {n : ℕ} (a b c : QCircuit n) :
   (a ≫ b) ≫ c ≡ a ≫ (b ≫ c) := by {
   intros ψ
-  simp [Qeval]
+  dsimp [Qeval]
 }
 
 /-
@@ -84,25 +82,25 @@ def QCircuit_Setoid (n : ℕ) : Setoid (QCircuit n) :=
 
 theorem seq_skip_left {n : ℕ} (c : QCircuit n) : (skip ≫ c) ≡ c := by {
   intro ψ
-  simp [Qeval]
+  dsimp [Qeval]
 }
 
 theorem seq_skip_right {n : ℕ} (c : QCircuit n) : (c ≫ skip) ≡ c := by {
   intro ψ
-  simp [Qeval]
+  dsimp [Qeval]
 }
 
 -- sequence congruence theorems
 
 theorem seq_congr_left {n : ℕ} {c1 c1' c2 : QCircuit n} : (c1 ≡ c1') → (c1 ≫ c2) ≡ (c1' ≫ c2) := by {
   intro h ψ
-  simp [Qeval]
+  dsimp [Qeval]
   rw [h]
 }
 
 theorem seq_congr_right {n : ℕ} {c1 c2 c2' : QCircuit n} : (c2 ≡ c2') → (c1 ≫ c2) ≡ (c1 ≫ c2') := by {
   intro h ψ
-  simp [Qeval]
+  dsimp [Qeval]
   rw [h]
 }
 
@@ -115,31 +113,31 @@ theorem seq_congr {n : ℕ} {a a' b b' : QCircuit n} : (a ≡ a') → (b ≡ b')
 
 theorem X_X_equiv_skip {n : ℕ} (k : Fin n) : (app (X k)) ≫ (app (X k)) ≡ skip := by {
   intro ψ
-  simp [Qeval]
+  dsimp [Qeval]
   exact X_involutive ψ k
 }
 
 theorem Y_Y_equiv_skip {n : ℕ} (k : Fin n) : (app (Y k)) ≫ (app (Y k)) ≡ skip := by {
   intro ψ
-  simp [Qeval]
+  dsimp [Qeval]
   exact Y_involutive ψ k
 }
 
 theorem Z_Z_equiv_skip {n : ℕ} (k : Fin n) : (app (Z k)) ≫ (app (Z k)) ≡ skip := by {
   intro ψ
-  simp [Qeval]
+  dsimp [Qeval]
   exact Z_involutive ψ k
 }
 
 theorem H_H_equiv_skip {n : ℕ} (k : Fin n) : (app (H k)) ≫ (app (H k)) ≡ skip := by {
   intro ψ
-  simp [Qeval]
+  dsimp [Qeval]
   exact H_involutive ψ k
 }
 
 theorem CNOT_CNOT_equiv {n : ℕ} {i j : Fin n} (h : i ≠ j) : (app (CNOT i j) ≫ app (CNOT i j)) ≡ skip := by {
   intro ψ
-  simp [Qeval]
+  dsimp [Qeval]
   exact CNOT_involutive ψ i j h
 }
 
@@ -147,33 +145,33 @@ theorem CNOT_CNOT_equiv {n : ℕ} {i j : Fin n} (h : i ≠ j) : (app (CNOT i j) 
 
 theorem H_X_H_eq_Z {n : ℕ} (k : Fin n) : (app (H k)) ≫ (app (X k)) ≫ (app (H k)) ≡ (app (Z k)) := by {
   intro ψ
-  simp [Qeval]
+  dsimp [Qeval]
   exact HXH_Z ψ k
 }
 
 theorem H_Z_H_eq_X {n : ℕ} (k : Fin n) : (app (H k)) ≫ (app (Z k)) ≫ (app (H k)) ≡ (app (X k)) := by {
   intro ψ
-  simp [Qeval]
+  dsimp [Qeval]
   exact HZH_X ψ k
 }
 
 theorem H_CNOT_H_eq_CZ {n : ℕ} {i j : Fin n} (hij : i ≠ j) : ((app (H j)) ≫ (app (CNOT i j)) ≫ (app (H j))) ≡ (app (CZ i j)) := by {
   intro ψ
-  simp [Qeval]
+  dsimp [Qeval]
   exact H_CNOT_H_CZ ψ hij
 }
 
 theorem H_CZ_H_eq_CNOT {n : ℕ} {i j : Fin n} (hij : i ≠ j) : ((app (H j)) ≫ (app (CZ i j)) ≫ (app (H j))) ≡ (app (CNOT i j)) := by {
   intro ψ
-  simp [Qeval]
+  dsimp [Qeval]
   exact H_CZ_H_CNOT ψ hij
 }
 
 -- distinct qubit sequence commutivity theorems
 
-theorem X_comm_Z_dist {n : ℕ} {i j : Fin n} (hij : i ≠ j) : (app (X i)) ≫ (app (Z j)) ≡ (app (Z j)) ≫ (app (X i)) := by {
+theorem X_comm_Z {n : ℕ} {i j : Fin n} (hij : i ≠ j) : (app (X i)) ≫ (app (Z j)) ≡ (app (Z j)) ≫ (app (X i)) := by {
   intro ψ
-  simp [Qeval]
+  dsimp [Qeval]
   funext bs
   unfold Qeval_gate app_X app_Z
   simp
@@ -181,9 +179,17 @@ theorem X_comm_Z_dist {n : ℕ} {i j : Fin n} (hij : i ≠ j) : (app (X i)) ≫ 
   cases hj : bs j <;> simp [hij']
 }
 
+theorem H_comm_X {n : ℕ} {i j : Fin n} (hij : i ≠ j) : (app (H i)) ≫ (app (X j)) ≡ (app (X j)) ≫ (app (H i)) := by {
+  intro ψ
+  dsimp [Qeval]
+  unfold Qeval_gate
+  simp
+  exact (HX_comm ψ hij.symm).symm
+}
+
 theorem H_comm_H {n : ℕ} {i j : Fin n} (hij : i ≠ j) : (app (H i)) ≫ (app (H j)) ≡ (app (H j)) ≫ (app (H i)) := by {
   intro ψ
-  simp [Qeval]
+  dsimp [Qeval]
   unfold Qeval_gate
   simp
   exact H_comm ψ hij
@@ -191,31 +197,13 @@ theorem H_comm_H {n : ℕ} {i j : Fin n} (hij : i ≠ j) : (app (H i)) ≫ (app 
 
 theorem CZ_comm_CZ {n : ℕ} {i j : Fin n} (hij : i ≠ j) : (app (CZ i j)) ≡ (app (CZ j i)) := by {
   intro ψ
-  simp [Qeval]
+  dsimp [Qeval]
   funext bs
-  -- unfold the concrete gate application; mirror the style used in X_comm_Z_dist
   unfold Qeval_gate app_CZ
   simp
-  -- need the symmetric inequality for later case reasoning
   have hji : j ≠ i := by rw [ne_eq]; exact hij.symm
-  -- case-split on the two relevant basis bits (bs i and bs j)
   cases hi : bs i <;> cases hj : bs j <;> simp [hji]; intros _; contradiction
 }
-
--- Extra Theorems
-
-theorem seq_assoc_congr_right {n : ℕ} (a b c c' : QCircuit n) :
-  (c ≡ c') → ((a ≫ b) ≫ c) ≡ (a ≫ (b ≫ c')) := by {
-    intros h ψ
-    rw [seq_assoc]
-    apply seq_congr_right
-    apply seq_congr_right
-    exact h
-}
-
--- [TODO]
-
--- Circuit Equivalence
 
 /-
 
@@ -232,15 +220,8 @@ Qubit 0: ─────── ⊕ ───────
 Qubit 1: ─────── ● ───────
 -/
 
-/-
-  H0 ≫ H1 ≫ CNOT 0 1 ≫ H0 ≫ H1
-
-  H0 ≫ H1 ≫ CNOT 0 1 ≫ H1 ≫ H0 (commute H1 and H0)
-
-
--/
-
 theorem CNOT_rev {n : ℕ} {i j : Fin n} (hij : i ≠ j) : (app (H i) ≫ app (H j) ≫ app (CNOT i j) ≫ app (H i) ≫ app (H j)) ≡ (app (CNOT j i)) := by {
+  -- proof outline:
   -- commute app (H i) and app (H j)
   -- rewrite middle: [app (H j) ≫ app (CNOT i j) ≫ app (H j)] as CZ
   -- this gives app (H i) ≫ app (CZ i j) ≫ app (H i)
@@ -256,7 +237,6 @@ theorem CNOT_rev {n : ℕ} {i j : Fin n} (hij : i ≠ j) : (app (H i) ≫ app (H
     apply seq_congr_right
     apply H_comm_H hij
   }
-  -- apply equiv_trans s1
   have s2 :
   (app (H i) ≫ app (H j) ≫ app (CNOT i j) ≫ app (H j) ≫ app (H i)) ≡
   (app (H i) ≫ app (CZ i j) ≫ app (H i)) := by {
@@ -271,7 +251,6 @@ theorem CNOT_rev {n : ℕ} {i j : Fin n} (hij : i ≠ j) : (app (H i) ≫ app (H
     apply H_CNOT_H_eq_CZ hij
   }
   -- app (H i) ≫ app (H j) ≫ app (CNOT i j) ≫ app (H j) ≫ app (H i) ≡ app (CNOT j i)
-  -- apply equiv_trans s2
   -- app (H i) ≫ app (CZ i j) ≫ app (H i) ≡ app (CNOT j i)
   have s3 :
   (app (H i) ≫ app (CZ i j) ≫ app (H i)) ≡
@@ -280,7 +259,6 @@ theorem CNOT_rev {n : ℕ} {i j : Fin n} (hij : i ≠ j) : (app (H i) ≫ app (H
     apply seq_congr_left
     apply CZ_comm_CZ hij
   }
-  -- apply equiv_trans s3
   -- app (H i) ≫ app (CZ j i) ≫ app (H i) ≡ app (CNOT j i)
   have s4 :
   (app (H i) ≫ app (CZ j i) ≫ app (H i)) ≡
@@ -293,22 +271,22 @@ theorem CNOT_rev {n : ℕ} {i j : Fin n} (hij : i ≠ j) : (app (H i) ≫ app (H
 
 -- bell states
 
-def gate_H_0 : QCircuit 2 := app (H (Fin.ofNat' 2 0))
-def gate_CNOT_0_1 : QCircuit 2 := app (CNOT (Fin.ofNat' 2 0) (Fin.ofNat' 2 1))
+def gate_H_0 : QCircuit 2 := app (H (Fin.ofNat 2 0))
+def gate_CNOT_0_1 : QCircuit 2 := app (CNOT (Fin.ofNat 2 0) (Fin.ofNat 2 1))
 def bell_pre : QCircuit 2 := gate_H_0 ≫ gate_CNOT_0_1
 
-theorem bell_prep_on_basis00 : 〚 bell_pre 〛 basis_00 = bell_plus_state := by {
-  simp [bell_pre, Qeval, gate_H_0, gate_CNOT_0_1]
+lemma bell_prep_on_basis00 : 〚 bell_pre 〛 basis_00 = bell_plus_state := by {
   exact bell_state_from_H_CNOT
 }
 
-theorem bell_minus_from_prep_by_Z : 〚 bell_pre ≫ (app (Z (Fin.ofNat' 2 1)) ) 〛 basis_00 = bell_minus_state := by {
-  simp [bell_pre, Qeval, gate_H_0, gate_CNOT_0_1]
+lemma bell_minus_from_prep_by_Z : 〚 bell_pre ≫ (app (Z (Fin.ofNat 2 1)) ) 〛 basis_00 = bell_minus_state := by {
   exact bell_minus_from_H_CNOT_Z
 }
 
 /-
 Future Notes:
-  - Introduce tactic for reducing circuits to simpler forms (use existing theorems for reduction and automation)
-  - Introduce metaprogramming tactic for
+  - Introduce tactic for reducing circuits to simpler forms
+  (use existing theorems for reduction and automation)
+  - Introduce metaprogramming tactic for applying equivalence
+  theorems based on the structure of the given circuit
 -/
