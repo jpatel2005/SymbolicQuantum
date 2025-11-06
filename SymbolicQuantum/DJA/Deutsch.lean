@@ -110,7 +110,6 @@ theorem Deutsch_correctness_const0 :
     }
     all_goals
     {
-      field_simp
       ring_nf
       conv_rhs=>
         change ((1 : ℂ) * (fun (bs : BitString 2) ↦
