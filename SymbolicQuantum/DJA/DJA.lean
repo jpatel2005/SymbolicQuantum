@@ -23,10 +23,8 @@ def H_post (n : ℕ) : QCircuit n :=
 def F (n : ℕ) : BitString n -> Bool :=
     fun bs => if bs = (fun _ => Qubit.zero) then true else false
 
-lemma l:n<n+1:=by simp
-
-def oracle_block (n : ℕ) (f : BitString (n+1) -> Bool) :=
-    fun bs => if (f bs) then app (X ⟨n,l⟩) else skip
+def oracle_block (n : ℕ) (f : BitString (n+1) -> Bool) : QCircuit (n+1) :=
+    app (Uf f (Fin.last n))
 
 -- might need to define n as ≥2 (or else the definition of deutsch_jozsa doesn't make sense - also induction will be more intutive this way???)
 def deutsch_jozsa (n : ℕ) (f : BitString (n+1) -> Bool) : QCircuit (n+1) :=

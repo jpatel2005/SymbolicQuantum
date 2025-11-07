@@ -9,6 +9,7 @@ inductive QGate (n : ℕ)
 | H : (Fin n) → QGate n
 | CNOT : (Fin n) → (Fin n) → QGate n
 | CZ : (Fin n) → (Fin n) → QGate n
+| Uf : (BitString n -> Bool) -> Fin n -> QGate n
 
 inductive QCircuit (n : ℕ)
 | skip : QCircuit n
@@ -24,6 +25,7 @@ noncomputable def Qeval_gate {n : ℕ} : QGate n → QState n → QState n
 | (H k)      => fun ψ => app_H ψ k
 | (CNOT i j) => fun ψ => app_CNOT ψ i j
 | (CZ i j)   => fun ψ => app_CZ ψ i j
+| (Uf f k)   => fun ψ => app_Uf ψ f k
 
 noncomputable def Qeval {n : ℕ} : QCircuit n → QState n → QState n
 | skip      => fun ψ => ψ

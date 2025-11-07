@@ -89,6 +89,13 @@ def app_CZ {n : ℕ} (ψ : QState n) (control target : Fin n) : QState n :=
         | Qubit.zero => ψ bs
         | Qubit.one  => - (ψ bs)
 
+def app_Uf {n : ℕ} (ψ : QState n) (f : BitString n -> Bool) (k : Fin n) : QState n :=
+  fun bs =>
+    if f bs then
+      app_X ψ k bs
+    else
+      ψ bs
+
 lemma invSqrt2Square : ((√2 : ℂ) ^ 2)⁻¹ = 1 / 2 := by {
   rw [pow_two]
   rw [← Complex.ofReal_mul]
