@@ -2,14 +2,14 @@ import Mathlib.Data.Real.Sqrt
 import Mathlib.Data.Complex.Basic
 import SymbolicQuantum.QuantumStates
 
-inductive QGate (n : ℕ)
-| X : (Fin n) → QGate n
-| Y : (Fin n) → QGate n
-| Z : (Fin n) → QGate n
-| H : (Fin n) → QGate n
-| CNOT : (Fin n) → (Fin n) → QGate n
-| CZ : (Fin n) → (Fin n) → QGate n
-| Uf : (BitString n -> Bool) -> Fin n -> QGate n
+inductive QGate : ℕ → Type
+| X {n : ℕ} : (Fin n) → QGate n
+| Y {n : ℕ} : (Fin n) → QGate n
+| Z {n : ℕ} : (Fin n) → QGate n
+| H {n : ℕ} : (Fin n) → QGate n
+| CNOT {n : ℕ} : (Fin n) → (Fin n) → QGate n
+| CZ {n : ℕ} : (Fin n) → (Fin n) → QGate n
+| Uf {n : ℕ} : (BitString n → Bool) → QGate (n+1)
 
 inductive QCircuit (n : ℕ)
 | skip : QCircuit n
@@ -25,7 +25,7 @@ noncomputable def Qeval_gate {n : ℕ} : QGate n → QState n → QState n
 | (H k)      => fun ψ => app_H ψ k
 | (CNOT i j) => fun ψ => app_CNOT ψ i j
 | (CZ i j)   => fun ψ => app_CZ ψ i j
-| (Uf f k)   => fun ψ => app_Uf ψ f k
+| (Uf f)     => fun ψ => app_Uf ψ f
 
 noncomputable def Qeval {n : ℕ} : QCircuit n → QState n → QState n
 | skip      => fun ψ => ψ
@@ -222,7 +222,9 @@ Qubit 0: ─────── ⊕ ───────
 Qubit 1: ─────── ● ───────
 -/
 
-theorem CNOT_rev {n : ℕ} {i j : Fin n} (hij : i ≠ j) : (app (H i) ≫ app (H j) ≫ app (CNOT i j) ≫ app (H i) ≫ app (H j)) ≡ (app (CNOT j i)) := by {
+theorem CNOT_rev {n : ℕ} {i j : Fin n} (hij : i ≠ j) :
+(app (H i) ≫ app (H j) ≫ app (CNOT i j) ≫ app (H i) ≫ app (H j)) ≡
+(app (CNOT j i)) := by {
   -- proof outline:
   -- commute app (H i) and app (H j)
   -- rewrite middle: [app (H j) ≫ app (CNOT i j) ≫ app (H j)] as CZ
@@ -233,7 +235,8 @@ theorem CNOT_rev {n : ℕ} {i j : Fin n} (hij : i ≠ j) : (app (H i) ≫ app (H
   -- ▪
   have s1 :
   (app (H i) ≫ app (H j) ≫ app (CNOT i j) ≫ app (H i) ≫ app (H j)) ≡
-  (app (H i) ≫ app (H j) ≫ app (CNOT i j) ≫ app (H j) ≫ app (H i)) := by {
+  (app (H i) ≫ app (H j) ≫ app (CNOT i j) ≫ app (H j) ≫ app (H i))
+  := by {
     apply seq_congr_right
     apply seq_congr_right
     apply seq_congr_right

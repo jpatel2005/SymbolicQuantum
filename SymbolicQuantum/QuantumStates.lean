@@ -11,7 +11,7 @@ def BitString (n : Nat) := Fin n → Qubit
 
 instance {n : ℕ} : DecidableEq (BitString n) := inferInstanceAs (DecidableEq (Fin n → Qubit))
 
-def QState (n : ℕ) : Type := BitString n → ℂ
+def QState (n : ℕ) := BitString n → ℂ
 
 -- Define negation and scalar multiplication for QState
 
@@ -89,10 +89,11 @@ def app_CZ {n : ℕ} (ψ : QState n) (control target : Fin n) : QState n :=
         | Qubit.zero => ψ bs
         | Qubit.one  => - (ψ bs)
 
-def app_Uf {n : ℕ} (ψ : QState n) (f : BitString n -> Bool) (k : Fin n) : QState n :=
+def app_Uf {n : ℕ} (ψ : QState (n+1)) (f : BitString n → Bool) : QState (n+1) :=
   fun bs =>
-    if f bs then
-      app_X ψ k bs
+    let bs_n : BitString n := fun i => bs (Fin.castLT i (Nat.lt_succ_of_lt i.is_lt))
+    if f bs_n then
+      (app_X ψ (Fin.last n)) bs
     else
       ψ bs
 
