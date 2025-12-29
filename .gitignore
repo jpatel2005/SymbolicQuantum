@@ -1,3 +1,4 @@
 /.lake
 test.lean
 old_*.lean
+*.txt

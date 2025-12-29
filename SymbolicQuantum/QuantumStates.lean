@@ -1,16 +1,19 @@
 import Mathlib.Data.Real.Sqrt
 import Mathlib.Data.Complex.Basic
+import Mathlib.Tactic.DeriveFintype
 
 inductive Qubit
 | zero : Qubit
 | one  : Qubit
-deriving DecidableEq, Inhabited, Repr
+deriving DecidableEq, Inhabited, Repr, Fintype
 
 -- represent a bitstring as a function from indices to qubits
 def BitString (n : Nat) := Fin n → Qubit
 
 instance {n : ℕ} : DecidableEq (BitString n) := inferInstanceAs (DecidableEq (Fin n → Qubit))
+instance {n : ℕ} : Fintype (BitString n) := inferInstanceAs (Fintype (Fin n → Qubit))
 
+-- might need to change this to `abbrev`
 def QState (n : ℕ) := BitString n → ℂ
 
 -- Define negation and scalar multiplication for QState
