@@ -4,6 +4,7 @@ import Mathlib.Algebra.Module.Basic
 import Mathlib.Algebra.Module.Pi
 import SymbolicQuantum.QuantumStates
 import SymbolicQuantum.QuantumEval
+import SymbolicQuantum.QuantumTactics
 
 open QGate QCircuit
 
@@ -69,21 +70,15 @@ theorem Deutsch_correctness_const0 :
     }
     rw [h1]
     have h2 : app (H (0:Fin 2)) ≫ app (H 1) ≫ app (H 0) ≡ app (H 0) ≫ app (H 0) ≫ app (H 1) := by {
-      intros _
-      apply seq_congr_right
-      apply H_comm_H
-      simp
+      qseq (H_comm_H (by simp))
     }
     rw [h2]
     have h3 : app (H (0:Fin 2)) ≫ app (H 0) ≫ app (H 1) ≡ skip ≫ app (H 1) := by {
-      intros _
-      rw [← seq_assoc]
-      apply seq_congr_left
-      apply H_H_equiv_skip
+      qseq (H_H_equiv_skip)
     }
     rw [h3]
     have h4 : skip ≫ app (H (1:Fin 2)) ≡ app (H 1) := by {
-      apply seq_skip_left
+      qseq ()
     }
     rw [h4]
     use 1
@@ -93,33 +88,9 @@ theorem Deutsch_correctness_const0 :
     unfold deutsch_post
     unfold app_H
     simp
+    ring_nf
     funext bs
-    cases hb0: bs 0 <;> cases hb1: bs 1 <;> simp
-    try any_goals {
-      field_simp
-      ring_nf
-      conv_rhs=>
-        arg 2
-        change ((1 : ℂ) * (fun (bs : BitString 2) ↦
-            ((match bs 0, bs 1 with
-            | Qubit.zero, Qubit.zero => ((√2)⁻¹ : ℂ)
-            | Qubit.zero, Qubit.one => -((√2)⁻¹ : ℂ)
-            | _, _ => (0 : ℂ)) : ℂ))
-        bs)
-      simp [hb0,hb1]
-    }
-    all_goals
-    {
-      ring_nf
-      conv_rhs=>
-        change ((1 : ℂ) * (fun (bs : BitString 2) ↦
-            ((match bs 0, bs 1 with
-            | Qubit.zero, Qubit.zero => ((√2)⁻¹ : ℂ)
-            | Qubit.zero, Qubit.one => -((√2)⁻¹ : ℂ)
-            | _, _ => (0 : ℂ)) : ℂ))
-        bs)
-      simp [hb0,hb1]
-    }
+    cases hb0: bs 0 <;> cases hb1: bs 1 <;> simp [hb0,hb1]
 }
 
 theorem Deutsch_correctness_const1  :
@@ -135,32 +106,15 @@ theorem Deutsch_correctness_const1  :
   deutsch_post := by {
     simp
     have h1 : app (H (0:Fin 2)) ≫ app (H 1) ≫ app (X 1) ≫ app (H 0) ≡ app (H 1) ≫ app (H 0) ≫ app (X 1) ≫ app (H 0) := by {
-      intros _
-      rw [← seq_assoc]
-      rw [← seq_assoc]
-      rw [← seq_assoc]
-      rw [← seq_assoc]
-      apply seq_congr_left
-      apply seq_congr_left
-      apply H_comm_H
-      simp
+      qseq (H_comm_H (by simp))
     }
     rw [h1]
     have h2 : app (H (1:Fin 2)) ≫ app (H 0) ≫ app (X 1) ≫ app (H 0) ≡ app (H 1) ≫ app (X 1) ≫ app (H 0) ≫ app (H 0) := by {
-      apply seq_congr_right
-      intros _
-      rw [← seq_assoc]
-      rw [← seq_assoc]
-      apply seq_congr_left
-      apply H_comm_X
-      simp
+      qseq (H_comm_X (by simp))
     }
     rw [h2]
     have h3 : app (H (1:Fin 2)) ≫ app (X 1) ≫ app (H 0) ≫ app (H 0) ≡ app (H 1) ≫ app (X 1) ≫ skip := by {
-      intros _
-      rw [← seq_assoc]
-      apply seq_congr_right
-      apply H_H_equiv_skip
+      qseq H_H_equiv_skip
     }
     rw [h3]
     use -1
@@ -173,14 +127,7 @@ theorem Deutsch_correctness_const1  :
     simp
     ring_nf
     funext bs
-    conv_rhs=>
-      change ((-1 : ℂ) * (fun (bs : BitString 2) ↦
-          ((match bs 0, bs 1 with
-          | Qubit.zero, Qubit.zero => ((√2)⁻¹ : ℂ)
-          | Qubit.zero, Qubit.one => -((√2)⁻¹ : ℂ)
-          | _, _ => (0 : ℂ)) : ℂ))
-      bs)
-    cases hb0: bs 0 <;> (cases hb1: bs 1 <;> (simp [hb0,hb1]))
+    cases hb0: bs 0 <;> (cases hb1: bs 1 <;> simp [hb0,hb1])
 }
 
 theorem Deutsch_correctness_id :
@@ -196,21 +143,11 @@ theorem Deutsch_correctness_id :
   deutsch_post := by {
   simp
   have h1 : app (H (0:Fin 2)) ≫ app (H 1) ≫ app (CNOT 1 0) ≫ app (H 0) ≡ app (H 1) ≫ app (H 0) ≫ app (CNOT 1 0) ≫ app (H 0) := by {
-    intros _
-    rw [← seq_assoc]
-    rw [← seq_assoc]
-    rw [← seq_assoc]
-    rw [← seq_assoc]
-    apply seq_congr_left
-    apply seq_congr_left
-    apply H_comm_H
-    simp
+    qseq (H_comm_H (by simp))
   }
   rw [h1]
   have h2 : app (H (1:Fin 2)) ≫ app (H 0) ≫ app (CNOT 1 0) ≫ app (H 0) ≡ app (H 1) ≫ app (CZ 1 0) := by {
-    apply seq_congr_right
-    apply H_CNOT_H_eq_CZ
-    simp
+    qseq (H_CNOT_H_eq_CZ (by simp))
   }
   rw [h2]
   use 1
@@ -220,18 +157,9 @@ theorem Deutsch_correctness_id :
   unfold ket01
   unfold deutsch_post
   unfold app_CZ app_H
-  simp
   ring_nf
   funext bs
-  conv_rhs=>
-    change ((1 : ℂ) * (fun (bs : BitString 2) ↦
-        ((match bs 0, bs 1 with
-        | Qubit.zero, Qubit.zero => ((√2)⁻¹ : ℂ)
-        | Qubit.zero, Qubit.one => -((√2)⁻¹ : ℂ)
-        | _, _ => (0 : ℂ)) : ℂ))
-    bs)
-  simp
-  cases bs 0 <;> (cases bs 1 <;> (simp))
+  cases hb0: bs 0 <;> (cases hb1: bs 1 <;> simp [hb0,hb1])
 }
 
 theorem Deutsch_correctness_not :
@@ -248,40 +176,17 @@ theorem Deutsch_correctness_not :
   simp
   have h1 : app (H (0:Fin 2)) ≫ app (H 1) ≫ (app (CNOT 1 0) ≫ app (X 1)) ≫ app (H 0) ≡
             app (H 1) ≫ app (H 0) ≫ (app (CNOT 1 0) ≫ app (X 1)) ≫ app (H 0) := by {
-    intros _
-    rw [← seq_assoc]
-    rw [← seq_assoc]
-    rw [← seq_assoc]
-    rw [← seq_assoc]
-    apply seq_congr_left
-    apply seq_congr_left
-    apply H_comm_H
-    simp
+    qseq (H_comm_H (by simp))
   }
   rw [h1]
   have h2 : app (H (1:Fin 2)) ≫ app (H 0) ≫ (app (CNOT 1 0) ≫ app (X 1)) ≫ app (H 0) ≡
             app (H 1) ≫ app (H 0) ≫ app (CNOT 1 0) ≫ app (H 0) ≫ app (X 1) := by {
-    apply seq_congr_right
-    apply seq_congr_right
-    intros _
-    rw [seq_assoc]
-    apply seq_congr_right
-    symm
-    apply H_comm_X
-    simp
+    qseq (H_comm_X (by simp))
   }
   rw [h2]
   have h3 : app (H (1:Fin 2)) ≫ app (H 0) ≫ app (CNOT 1 0) ≫ app (H 0) ≫ app (X 1) ≡
             app (H 1) ≫ app (CZ 1 0) ≫ app (X 1) := by {
-    apply seq_congr_right
-    intros _
-    rw [← seq_assoc]
-    rw [← seq_assoc]
-    apply seq_congr_left
-    intros _
-    rw [seq_assoc]
-    apply H_CNOT_H_eq_CZ
-    simp
+    qseq (H_CNOT_H_eq_CZ (by simp))
   }
   rw [h3]
   use -1
@@ -291,18 +196,9 @@ theorem Deutsch_correctness_not :
   unfold ket01
   unfold deutsch_post
   unfold app_CZ app_H app_X
-  simp
   ring_nf
   funext bs
-  conv_rhs=>
-    change ((-1 : ℂ) * (fun (bs : BitString 2) ↦
-        ((match bs 0, bs 1 with
-        | Qubit.zero, Qubit.zero => ((√2)⁻¹ : ℂ)
-        | Qubit.zero, Qubit.one => -((√2)⁻¹ : ℂ)
-        | _, _ => (0 : ℂ)) : ℂ))
-    bs)
-  simp
-  cases bs 0 <;> cases bs 1 <;> simp
+  cases hb0: bs 0 <;> (cases hb1: bs 1 <;> simp [hb0,hb1])
 }
 
 theorem Deutsch_correctness : (Qeval deutsch ket01) ≡ₚ deutsch_post := by {

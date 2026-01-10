@@ -207,73 +207,6 @@ theorem CZ_comm_CZ {n : ℕ} {i j : Fin n} (hij : i ≠ j) : (app (CZ i j)) ≡ 
   cases hi : bs i <;> cases hj : bs j <;> simp [hji]; intros _; contradiction
 }
 
-/-
-
-Theorem [CNOT_rev]:
-
-[LHS]
-Qubit 0: ─────── H ───────── ● ──────────── H ───────
-                             |
-Qubit 1: ─────── H ───────── ⊕ ──────────── H ───────
-
-[RHS]
-Qubit 0: ─────── ⊕ ───────
-                 |
-Qubit 1: ─────── ● ───────
--/
-
-theorem CNOT_rev {n : ℕ} {i j : Fin n} (hij : i ≠ j) :
-(app (H i) ≫ app (H j) ≫ app (CNOT i j) ≫ app (H i) ≫ app (H j)) ≡
-(app (CNOT j i)) := by {
-  -- proof outline:
-  -- commute app (H i) and app (H j)
-  -- rewrite middle: [app (H j) ≫ app (CNOT i j) ≫ app (H j)] as CZ
-  -- this gives app (H i) ≫ app (CZ i j) ≫ app (H i)
-  -- rewrite middle: [app (CZ i j)] as [app (CZ j i)]
-  -- this gives app (H i) ≫ app (CZ j i) ≫ app (H i)
-  -- rewrite entire expression as [app (CNOT j i)]
-  -- ▪
-  have s1 :
-  (app (H i) ≫ app (H j) ≫ app (CNOT i j) ≫ app (H i) ≫ app (H j)) ≡
-  (app (H i) ≫ app (H j) ≫ app (CNOT i j) ≫ app (H j) ≫ app (H i))
-  := by {
-    apply seq_congr_right
-    apply seq_congr_right
-    apply seq_congr_right
-    apply H_comm_H hij
-  }
-  have s2 :
-  (app (H i) ≫ app (H j) ≫ app (CNOT i j) ≫ app (H j) ≫ app (H i)) ≡
-  (app (H i) ≫ app (CZ i j) ≫ app (H i)) := by {
-    -- app (H i) ≫ app (H j) ≫ app (CNOT i j) ≫ app (H j) ≫ app (H i) ≡ app (H i) ≫ app (CZ i j) ≫ app (H i)
-    apply seq_congr_right
-    intros _
-    rw [← seq_assoc]
-    rw [← seq_assoc]
-    apply seq_congr_left
-    intros _
-    rw [seq_assoc]
-    apply H_CNOT_H_eq_CZ hij
-  }
-  -- app (H i) ≫ app (H j) ≫ app (CNOT i j) ≫ app (H j) ≫ app (H i) ≡ app (CNOT j i)
-  -- app (H i) ≫ app (CZ i j) ≫ app (H i) ≡ app (CNOT j i)
-  have s3 :
-  (app (H i) ≫ app (CZ i j) ≫ app (H i)) ≡
-  (app (H i) ≫ app (CZ j i) ≫ app (H i)) := by {
-    apply seq_congr_right
-    apply seq_congr_left
-    apply CZ_comm_CZ hij
-  }
-  -- app (H i) ≫ app (CZ j i) ≫ app (H i) ≡ app (CNOT j i)
-  have s4 :
-  (app (H i) ≫ app (CZ j i) ≫ app (H i)) ≡
-  (app (CNOT j i)) := by {
-    have hij' : j ≠ i := by rw [ne_eq]; exact hij.symm
-    apply H_CZ_H_eq_CNOT hij'
-  }
-  exact equiv_trans s1 (equiv_trans s2 (equiv_trans s3 s4))
-}
-
 -- bell states
 
 def gate_H_0 : QCircuit 2 := app (H (Fin.ofNat 2 0))
@@ -287,11 +220,3 @@ lemma bell_prep_on_basis00 : 〚 bell_pre 〛 basis_00 = bell_plus_state := by {
 lemma bell_minus_from_prep_by_Z : 〚 bell_pre ≫ (app (Z (Fin.ofNat 2 1)) ) 〛 basis_00 = bell_minus_state := by {
   exact bell_minus_from_H_CNOT_Z
 }
-
-/-
-Future Notes:
-  - Introduce tactic for reducing circuits to simpler forms
-  (use existing theorems for reduction and automation)
-  - Introduce metaprogramming tactic for applying equivalence
-  theorems based on the structure of the given circuit
--/

@@ -24,6 +24,9 @@ instance {n : ℕ} : Neg (QState n) where
 instance {n : ℕ} : HMul ℂ (QState n) (QState n) where
   hMul c ψ := fun bs => c * ψ bs
 
+@[simp] theorem q_mul_apply {n : ℕ} (c : ℂ) (ψ : QState n) (bs : BitString n) :
+  (c * ψ) bs = c * ψ bs := rfl
+
 def app_X {n : ℕ} (ψ : QState n) (k : Fin n) : QState n :=
   fun bs =>
     let flipped :=
@@ -194,16 +197,11 @@ theorem XY_iZ {n : ℕ} (ψ : QState n) (k : Fin n) : (app_Y (app_X ψ k) k) = C
   cases hk: (bs k) <;> simp_all
   {
     congr 1
-    simp [hk]
-    apply congr_arg ψ
     funext j
     by_cases hj : j = k <;> simp [hj, hk]
   }
   {
-    rw [← mul_neg]
     congr 1
-    simp [hk]
-    apply congr_arg ψ
     funext j
     by_cases hj : j = k <;> simp [hj, hk]
   }
@@ -213,16 +211,15 @@ theorem YZ_iX {n : ℕ} (ψ : QState n) (k : Fin n) : (app_Z (app_Y ψ k) k) = C
   funext bs
   unfold app_X app_Y app_Z
   simp
-  cases hk: (bs k) <;> (
-    simp_all
-    congr 1
-    simp [hk]
-  )
+  cases hk: (bs k) <;> simp
 }
 
 -- tricky
 theorem ZX_iY {n : ℕ} (ψ : QState n) (k : Fin n) : (app_X (app_Z ψ k) k) = Complex.I * (app_Y ψ k) := by {
-  sorry
+  funext bs
+  unfold app_X app_Y app_Z
+  simp
+  cases hk: (bs k) <;> simp [←mul_assoc]
 }
 
 theorem CNOT_involutive {n : ℕ} (ψ : QState n) (i j : Fin n) (h : i ≠ j) : app_CNOT (app_CNOT ψ i j) i j = ψ := by {
