@@ -1,8 +1,6 @@
-import Lean
-import Lean.Elab.Tactic
-import SymbolicQuantum.QuantumEval
+import Mathlib.Data.Real.Sqrt
+import SymbolicQuantum.DJA.Defs
 
-open Lean Elab Tactic Meta
 open Lean.Parser.Tactic
 
 syntax "qseq" (term)? : tactic
@@ -56,3 +54,28 @@ macro_rules
   (try ring_nf);
   (try simp [$lemmas,*]);
 ))
+
+syntax "qunfold" ("[" ident,* "]")? : tactic
+
+macro_rules
+| `(tactic| qunfold [$defs,*]) =>
+    `(tactic|
+      (
+        $[try unfold $defs;]*
+        try unfold ket0n_M;
+        try unfold ketPn_M;
+        try unfold ketPn;
+        try unfold ket0n;
+        try unfold tensor_product;
+        try unfold mask_left;
+        try unfold mask_right;
+        try unfold embed_arb;
+        try unfold embed_prefix;
+        try unfold embed_last;
+        try unfold ketP;
+        try unfold ketM;
+        try unfold ket0;
+        try unfold basis_state;
+        try simp
+      )
+    )

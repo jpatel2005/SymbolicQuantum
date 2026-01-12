@@ -5,14 +5,9 @@ import Mathlib.Algebra.Module.Pi
 import SymbolicQuantum.QuantumStates
 import SymbolicQuantum.QuantumEval
 import SymbolicQuantum.QuantumTactics
+import SymbolicQuantum.GlobalPhase
 
 open QGate QCircuit
-
-def GlobalPhaseEq {n : ℕ}
-  (ψ₁ ψ₂ : QState n) : Prop :=
-  ∃ (c : ℂ), c ≠ 0 ∧ ψ₁ = c * ψ₂
-
-infix:50 "≡ₚ " => GlobalPhaseEq
 
 def parity (f : Qubit -> Qubit) : Qubit :=
   if f Qubit.zero = f Qubit.one then Qubit.zero else Qubit.one
@@ -118,7 +113,6 @@ theorem Deutsch_correctness_const1  :
     }
     rw [h3]
     use -1
-    simp
     repeat unfold Qeval
     unfold Qeval_gate
     unfold ket01
@@ -151,12 +145,12 @@ theorem Deutsch_correctness_id :
   }
   rw [h2]
   use 1
-  simp
   repeat unfold Qeval
   unfold Qeval_gate
   unfold ket01
   unfold deutsch_post
   unfold app_CZ app_H
+  simp
   ring_nf
   funext bs
   cases hb0: bs 0 <;> (cases hb1: bs 1 <;> simp [hb0,hb1])
@@ -190,12 +184,12 @@ theorem Deutsch_correctness_not :
   }
   rw [h3]
   use -1
-  simp
   repeat unfold Qeval
   unfold Qeval_gate
   unfold ket01
   unfold deutsch_post
   unfold app_CZ app_H app_X
+  simp
   ring_nf
   funext bs
   cases hb0: bs 0 <;> (cases hb1: bs 1 <;> simp [hb0,hb1])
