@@ -95,13 +95,26 @@ def app_CZ {n : ℕ} (ψ : QState n) (control target : Fin n) : QState n :=
         | Qubit.zero => ψ bs
         | Qubit.one  => - (ψ bs)
 
-def app_Uf {n : ℕ} (ψ : QState (n+1)) (f : BitString n → Bool) : QState (n+1) :=
+def app_Uf_DJA {n : ℕ} (ψ : QState (n+1)) (f : BitString n → Bool) : QState (n+1) :=
   fun bs =>
     let bs_n : BitString n := fun i => bs (Fin.castLT i (Nat.lt_succ_of_lt i.is_lt))
     if f bs_n then
       (app_X ψ (Fin.last n)) bs
     else
       ψ bs
+
+def app_Uf_Simon {n m : ℕ} (ψ : QState (n+m)) (f : BitString n → BitString m) : QState (n+m) :=
+  fun bs => ψ fun i =>
+      if h : i < n then
+        bs i
+      else
+        let fx := f (fun k => bs ⟨k, by omega⟩) ⟨i - n, by omega⟩
+        match fx with
+        | Qubit.zero => bs i
+        | Qubit.one  =>
+          match bs i with
+          | Qubit.zero => Qubit.one
+          | Qubit.one  => Qubit.zero
 
 lemma invSqrt2Square : ((√2 : ℂ) ^ 2)⁻¹ = 1 / 2 := by {
   rw [pow_two]

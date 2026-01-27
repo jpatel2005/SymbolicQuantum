@@ -6,176 +6,11 @@ import Mathlib.Data.Fintype.Basic
 import SymbolicQuantum.QuantumTactics
 import SymbolicQuantum.DJA.Defs
 import SymbolicQuantum.GlobalPhase
+import SymbolicQuantum.QuantumLemmas
 
 open QGate QCircuit
 
 -- (Deutsch-Jozsa Algorithm)
-
-lemma Qeval_QRange_succ_split {n start k : ℕ} :
-〚QRange_H n start (k + 1)〛 = 〚QRange_H n start k ≫ QRange_H n (start + k) 1〛 := rfl
-
--- Disjoint commuting lemma for QRange_H
-lemma QRange_H_disj_comm {n : ℕ} (start len target : ℕ)
-(ht : target < n)
-(h_disjoint : target ≥ start + len) :
-∀ ψ, 〚QRange_H n start len〛 (〚app (H ⟨target, ht⟩)〛 ψ) =
-〚app (H ⟨target, ht⟩)〛 (〚QRange_H n start len〛 ψ) := by {
-  induction len generalizing start target ht with
-  | zero =>
-    simp [QRange_H, Qeval]
-  | succ range_len ih =>
-    intro ψ
-    have h_range_len : start + range_len < n := by omega
-    simp [QRange_H,Qeval,h_range_len,Qeval_gate]
-    change 〚app (H ⟨start + range_len, h_range_len⟩)〛 (〚QRange_H n start range_len〛 (〚app (H ⟨target, ht⟩)〛 ψ)) =
-      〚app (H ⟨target, ht⟩)〛 (〚app (H ⟨start + range_len, h_range_len⟩)〛 (〚QRange_H n start range_len〛 ψ))
-    rw [ih start (target) (ht) (by omega)]
-    simp [Qeval,Qeval_gate]
-    rw [H_comm _ (by simp;omega)]
-}
-
--- QRange can be split in reverse order of definition
-lemma Qeval_QRange_succ_split_rev {n start k : ℕ} (h : start + k < n) :
-  〚QRange_H n start (k + 1)〛 = 〚QRange_H n (start + k) 1 ≫ QRange_H n start k〛 := by {
-  rw [Qeval_QRange_succ_split]
-  have hc1 : start + k < n := by omega
-  simp [QRange_H, hc1, Qeval, Qeval_gate]
-  funext ψ
-  change 〚app (H ⟨start + k, h⟩)〛 (〚QRange_H n start k〛 ψ) =
-    〚QRange_H n start k〛 (〚app (H ⟨start + k, h⟩)〛 ψ)
-  rw [QRange_H_disj_comm]
-  exact Nat.le_refl _
-}
-
-lemma embed_prefix_ket0n_succ {n : ℕ} :
-embed_prefix (ket0n (n + 1)) =
-(embed_prefix (embed_prefix (ket0n n))) ⊗[⟨n, by omega⟩] (embed_prefix (embed_last ket0)) := by
-  funext bs
-  unfold tensor_product embed_prefix embed_last mask_left mask_right ket0n ket0 basis_state
-  simp
-  split_ifs with hc1 hc2 hc3 hc4 hc5 <;> try rfl
-  {
-    exfalso
-    apply hc3
-    funext i
-    exact congr_fun hc1 ⟨i, by omega⟩
-  }
-  {
-    exfalso
-    apply hc2
-    funext x
-    exact congr_fun hc1 ⟨n, by omega⟩
-  }
-  {
-    exfalso
-    apply hc1
-    apply congr_fun at hc4
-    apply congr_fun at hc5
-    funext k
-    by_cases h : k = n
-    {
-      have : k = ⟨n, Nat.lt_succ_self n⟩ := Fin.eq_of_val_eq h
-      rw [this]
-      exact hc4 ⟨0, Nat.zero_lt_one⟩
-    }
-    exact hc5 ⟨k, by omega⟩
-  }
-
--- QRange_H applied to one state times another is equivalent to applying to
--- one state then multiplying by the other
-lemma QRange_H_distrib_disjoint (m k : ℕ) (hk_bound : k ≤ m + 1) :
-  ∀ (f g : BitString (m+1) → ℂ),
-  (∀ (bs : BitString (m+1)) (v : Qubit) (j : Fin (m+1)),
-     (j : ℕ) < k → g (fun i => if i = j then v else bs i) = g bs) →
-  〚QRange_H (m + 1) 0 k〛 (fun bs => f bs * g bs)
-  = (fun bs => (〚QRange_H (m + 1) 0 k〛 f) bs * g bs) := by {
-  induction k with
-  | zero =>
-    simp [QRange_H, Qeval]
-  | succ k' ih =>
-    intros f g h_ignore
-    have hk' : k' < m + 1 := by omega
-    rw [QRange_H]
-    simp [hk', Qeval, Qeval_gate]
-    rw [ih (by omega) f g]
-    {
-      funext bs
-      have h_inv_at_k : ∀ (v : Qubit), g (fun i ↦ if i = ⟨k', hk'⟩ then v else bs i) = g bs := by {
-        intro v
-        apply h_ignore bs v ⟨k', hk'⟩
-        simp
-      }
-      simp [app_H, h_inv_at_k]
-      cases hk' : bs ⟨k', hk'⟩ <;> ring_nf
-    }
-    {
-      intros bs v j hj
-      apply h_ignore bs v j
-      exact Nat.lt_succ_of_lt hj
-    }
-}
-
-lemma QRange_H_involutive_general (m n : ℕ) (h_bound : n ≤ m + 1) :
-  ∀ (ψ : QState (m + 1)),
-  〚QRange_H (m+1) 0 n〛 (〚QRange_H (m+1) 0 n〛 ψ) = ψ := by {
-  induction n with
-  | zero =>
-    intro ψ
-    simp [QRange_H, Qeval]
-  | succ k ih =>
-    intro ψ
-    nth_rw 1 [Qeval_QRange_succ_split_rev (by linarith)]
-    nth_rw 1 [Qeval]
-    have hk : k < m + 1 := by omega
-    simp [QRange_H, hk, Qeval, Qeval_gate]
-    rw [H_involutive, ih (by omega)]
-}
-
-lemma ket0n_succ_split (m n : ℕ) (h : n < m + 1) :
-  embed_arb (by omega) (ket0n (n + 1)) =
-  (fun bs => embed_arb (by omega) (ket0n n) bs * ket0 (fun _ => bs ⟨n, h⟩)) := by {
-  funext bs
-  qunfold [π]
-  split_ifs with hc1 hc2 hc3 hc4 hc5 <;> try rfl
-  {
-    exfalso
-    apply hc3
-    funext k
-    apply congr_fun at hc1
-    rw [←hc1 ⟨k, by omega⟩]
-  }
-  {
-    exfalso
-    have : bs ⟨n, h⟩ = Qubit.zero := by
-      have := congr_fun hc1
-      rw [this ⟨n, Nat.lt_succ_self n⟩]
-    apply hc2
-    funext k
-    rw [this]
-  }
-  {
-    exfalso
-    apply hc1
-    funext k
-    apply congr_fun at hc4
-    apply congr_fun at hc5
-    by_cases hk : k < n
-    { rw [hc5 ⟨k, hk⟩] }
-    {
-      have hk_eq : k = n := by omega
-      simp [hk_eq]
-      rw [←hc4 0]
-    }
-  }
-}
-
-lemma ketPn_succ_split (m n : ℕ) (h : n < m + 1) :
-  embed_arb (by omega) (ketPn (n + 1)) =
-  (fun bs => embed_arb (by omega) (ketPn n) bs * ketP (fun _ => bs ⟨n, h⟩)) := by {
-  funext bs
-  qunfold [π]
-  cases bs ⟨n,h⟩ <;> qsimp [mul_comm]
-}
 
 lemma app_H_on_ket0_at (m n : ℕ) (h : n < m + 1) (ψ_prefix : QState (m+1))
   (h_disjoint : ∀ bs, ψ_prefix (Function.update bs ⟨n, h⟩ Qubit.one) = ψ_prefix bs) :
@@ -206,7 +41,7 @@ lemma H_init_ket0n (n m : ℕ) (h : n ≤ m) :
   induction n generalizing m with
   | zero =>
     qunfold [QRange_H, Qeval]
-    congr
+    rfl
   | succ n ih =>
     have hq : n < m + 1 := by omega
     rw [Qeval_QRange_succ_split]
@@ -261,30 +96,30 @@ lemma H_init_ket0n_M_gen (n m : ℕ) (h : n ≤ m) :
 }
 
 -- step 1 (initial hadamards)
-lemma H_init_action (n : ℕ) :
-〚H_init_n n〛 (ket0n_M n) = ketPn_M n :=
+lemma H_init_action_dja (n : ℕ) :
+〚H_init_DJA n〛 (ket0n_M n) = ketPn_M n :=
 H_init_ket0n_M_gen n n (Nat.le_refl n) -- generalized lemma with m = n
 
-lemma H_init_eq_post (n : ℕ) : H_init_n n = H_post_n n := rfl
+lemma H_init_eq_post (n : ℕ) : H_init_DJA n = H_post_DJA n := rfl
 
 -- step 2 (final hadamards) - reverse direction
 lemma H_post_action (n : ℕ) :
-〚H_post_n n〛 (ketPn_M n) = ket0n_M n := by {
+〚H_post_DJA n〛 (ketPn_M n) = ket0n_M n := by {
   rw [←H_init_eq_post n]
-  rw [←H_init_action n]
-  unfold H_init_n
+  rw [←H_init_action_dja n]
+  unfold H_init_DJA
   exact QRange_H_involutive_general n n (Nat.le_succ n) (ket0n_M n)
 }
 
 -- step 3 (oracle action for constant functions)
 lemma oracle_constant_kickback {n : ℕ} (f : BitString n → Bool) (hf : isConstant n f) :
-〚oracle_block n f〛 (ketPn_M n) ≡ₚ ketPn_M n := by {
-  unfold oracle_block
+〚oracle_block_DJA n f〛 (ketPn_M n) ≡ₚ ketPn_M n := by {
+  unfold oracle_block_DJA
   unfold isConstant at hf
   cases hf with
   | inl ht =>
     simp [Qeval, Qeval_gate]
-    unfold app_Uf app_X
+    unfold app_Uf_DJA app_X
     unfold ketPn_M embed_prefix embed_last ketPn ketM
     unfold tensor_product mask_left mask_right
     unfold GlobalPhaseEq
@@ -305,7 +140,7 @@ lemma oracle_constant_kickback {n : ℕ} (f : BitString n → Bool) (hf : isCons
     }
   | inr hf =>
     simp [Qeval, Qeval_gate]
-    unfold app_Uf
+    unfold app_Uf_DJA
     unfold ketPn_M embed_prefix embed_last ketPn ketM
     unfold tensor_product mask_left mask_right
     unfold GlobalPhaseEq
@@ -319,7 +154,7 @@ theorem DJA_correctness_constant {n : ℕ} (f : BitString n → Bool) (hf: isCon
 〚deutsch_jozsa n f〛 (ket0n_M n) ≡ₚ (ket0n_M n) := by {
   unfold deutsch_jozsa
   unfold Qeval Qeval
-  rw [H_init_action]
+  rw [H_init_action_dja]
   rw [←H_post_action n]
   apply Qeval_phase_eq
   exact oracle_constant_kickback f hf
@@ -327,22 +162,13 @@ theorem DJA_correctness_constant {n : ℕ} (f : BitString n → Bool) (hf: isCon
 
 -- DJA balanced case
 
--- phase kickback state
-noncomputable def ket_f_kickback {n : ℕ} (f : BitString n → Bool) : QState (n + 1) :=
-  fun bs =>
-  (1 / Real.sqrt (2^(n+1)) : ℂ) * (if f (fun i => bs ⟨i, by omega⟩) then -1 else 1) *
-  (match bs ⟨n, Nat.lt_add_one n⟩ with
-    | Qubit.zero => 1
-    | Qubit.one  => -1
-  )
-
 -- oracle action for balanced case (sending state to phase kickback state)
 lemma oracle_balanced_action {n : ℕ} (f : BitString n → Bool) :
-〚oracle_block n f〛 (ketPn_M n) ≡ₚ ket_f_kickback f := by {
-  unfold oracle_block
+〚oracle_block_DJA n f〛 (ketPn_M n) ≡ₚ ket_f_kickback f := by {
+  unfold oracle_block_DJA
   unfold ket_f_kickback
   simp [Qeval, Qeval_gate]
-  unfold app_Uf app_X
+  unfold app_Uf_DJA app_X
   unfold ketPn_M embed_prefix embed_last ketPn ketM
   unfold tensor_product mask_left mask_right
   simp
@@ -632,8 +458,8 @@ lemma QRange_H_sum_property (n m : ℕ) (h : n ≤ m) (ψ : QState (m+1)) :
 
 -- the amplitude
 lemma balanced_H_kickback_zero {n : ℕ} (f : BitString n → Bool) (hf : isBalanced n f) :
-(〚H_post_n n〛 (ket_f_kickback f)) (fun _ => Qubit.zero) = 0 := by {
-  unfold H_post_n
+(〚H_post_DJA n〛 (ket_f_kickback f)) (fun _ => Qubit.zero) = 0 := by {
+  unfold H_post_DJA
   rw [QRange_H_sum_property n n (by rfl)]
   unfold ket_f_kickback embed_arb_zero
   unfold isBalanced at hf
@@ -656,8 +482,8 @@ theorem DJA_correctness_balanced {n : ℕ} (f : BitString n → Bool) (hf: isBal
 Complex.normSq (〚deutsch_jozsa n f〛 (ket0n_M n) (fun _ => Qubit.zero)) = 0 := by {
   unfold deutsch_jozsa
   unfold Qeval Qeval
-  rw [H_init_action]
-  have h_equiv : 〚H_post_n n〛 (〚oracle_block n f〛 (ketPn_M n)) ≡ₚ 〚H_post_n n〛 (ket_f_kickback f) := by {
+  rw [H_init_action_dja]
+  have h_equiv : 〚H_post_DJA n〛 (〚oracle_block_DJA n f〛 (ketPn_M n)) ≡ₚ 〚H_post_DJA n〛 (ket_f_kickback f) := by {
     apply Qeval_phase_eq
     exact oracle_balanced_action f
   }

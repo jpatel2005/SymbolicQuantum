@@ -73,10 +73,15 @@ theorem Qeval_phase_eq {m : ℕ} (C : QCircuit m) (ψ₁ ψ₂ : QState m) :
       }
       {
         rename_i n
-        unfold app_Uf app_X
+        unfold app_Uf_DJA app_X
         simp
         funext bs
         split_ifs with hc1 <;> simp [hc1]
+      }
+      {
+        rename_i n
+        unfold app_Uf_Simon
+        rfl
       }
   }
   rw [h_linear ψ₂]

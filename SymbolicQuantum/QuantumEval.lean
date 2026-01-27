@@ -9,7 +9,8 @@ inductive QGate : ℕ → Type
 | H {n : ℕ} : (Fin n) → QGate n
 | CNOT {n : ℕ} : (Fin n) → (Fin n) → QGate n
 | CZ {n : ℕ} : (Fin n) → (Fin n) → QGate n
-| Uf {n : ℕ} : (BitString n → Bool) → QGate (n+1)
+| Uf_DJA {n : ℕ} : (BitString n → Bool) → QGate (n+1)
+| Uf_Simon {n m : ℕ} : (BitString n → BitString m) → QGate (n+m)
 
 inductive QCircuit (n : ℕ)
 | skip : QCircuit n
@@ -19,13 +20,14 @@ inductive QCircuit (n : ℕ)
 open QGate QCircuit
 
 noncomputable def Qeval_gate {n : ℕ} : QGate n → QState n → QState n
-| (X k)      => fun ψ => app_X ψ k
-| (Y k)      => fun ψ => app_Y ψ k
-| (Z k)      => fun ψ => app_Z ψ k
-| (H k)      => fun ψ => app_H ψ k
-| (CNOT i j) => fun ψ => app_CNOT ψ i j
-| (CZ i j)   => fun ψ => app_CZ ψ i j
-| (Uf f)     => fun ψ => app_Uf ψ f
+| (X k)        => fun ψ => app_X ψ k
+| (Y k)        => fun ψ => app_Y ψ k
+| (Z k)        => fun ψ => app_Z ψ k
+| (H k)        => fun ψ => app_H ψ k
+| (CNOT i j)   => fun ψ => app_CNOT ψ i j
+| (CZ i j)     => fun ψ => app_CZ ψ i j
+| (Uf_DJA f)   => fun ψ => app_Uf_DJA ψ f
+| (Uf_Simon f) => fun ψ => app_Uf_Simon ψ f
 
 noncomputable def Qeval {n : ℕ} : QCircuit n → QState n → QState n
 | skip      => fun ψ => ψ

@@ -62,6 +62,8 @@ macro_rules
     `(tactic|
       (
         $[try unfold $defs;]*
+        try unfold ketPn_0m;
+        try unfold ket0n_0m;
         try unfold ket0n_M;
         try unfold ketPn_M;
         try unfold ketPn;
@@ -71,6 +73,7 @@ macro_rules
         try unfold mask_right;
         try unfold embed_arb;
         try unfold embed_prefix;
+        try unfold embed_suffix;
         try unfold embed_last;
         try unfold ketP;
         try unfold ketM;
