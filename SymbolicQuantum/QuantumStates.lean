@@ -7,6 +7,10 @@ inductive Qubit
 | one  : Qubit
 deriving DecidableEq, Inhabited, Repr, Fintype
 
+def Qubit.toNat
+| Qubit.zero => 0
+| Qubit.one  => 1
+
 -- represent a bitstring as a function from indices to qubits
 def BitString (n : Nat) := Fin n → Qubit
 

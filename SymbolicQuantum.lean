@@ -4,6 +4,7 @@
 import «SymbolicQuantum».QuantumStates
 import «SymbolicQuantum».QuantumEval
 import «SymbolicQuantum».QuantumDefs
+import «SymbolicQuantum».QuantumLemmas
 import «SymbolicQuantum».QuantumTactics
 import «SymbolicQuantum».GlobalPhase
 -- Deutsch/DJA

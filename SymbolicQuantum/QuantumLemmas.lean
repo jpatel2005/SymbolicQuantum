@@ -234,10 +234,144 @@ lemma ket0n_succ_split_gen (n k : ℕ) (h : n < k) :
   }
 }
 
+lemma ketPn_succ_split_gen (n k : ℕ) (h : n < k) :
+  embed_arb (by omega) (ketPn (n + 1)) =
+  (fun bs => embed_arb (by omega) (ketPn n) bs * ketP (fun _ => bs ⟨n, h⟩)) := by {
+  funext bs
+  qunfold [π]
+  cases bs ⟨n,h⟩ <;> qsimp [mul_comm]
+}
+
 lemma ketPn_succ_split (m n : ℕ) (h : n < m + 1) :
   embed_arb (by omega) (ketPn (n + 1)) =
   (fun bs => embed_arb (by omega) (ketPn n) bs * ketP (fun _ => bs ⟨n, h⟩)) := by {
   funext bs
   qunfold [π]
   cases bs ⟨n,h⟩ <;> qsimp [mul_comm]
+}
+
+lemma sum_bitstring_split_last (n : ℕ) (ψ : BitString (n + 1) → ℂ) :
+  ∑ x : BitString (n + 1), ψ x =
+  (∑ x : BitString n, ψ (Fin.snoc x Qubit.zero)) +
+  (∑ x : BitString n, ψ (Fin.snoc x Qubit.one)) := by {
+  let iso : BitString (n + 1) ≃ BitString n × Qubit := {
+    toFun := fun f => (Fin.init f, f (Fin.last n))
+    invFun := fun ⟨g, a⟩ => Fin.snoc g a
+    left_inv := fun _ => by simp
+    right_inv := fun _ => by simp
+  }
+  calc
+    ∑ x : BitString (n + 1), ψ x = ∑ y : BitString n × Qubit, ψ (Fin.snoc y.1 y.2) := by {
+      rw [Fintype.sum_equiv iso]
+      simp[iso]
+    }
+    _ = ∑ x : BitString n, ∑ a : Qubit, ψ (Fin.snoc x a) := by rw [Fintype.sum_prod_type]
+    _ = ∑ x : BitString n, (ψ (Fin.snoc x Qubit.zero) + ψ (Fin.snoc x Qubit.one)) := by {
+      congr
+      funext x
+      have h_univ : (Finset.univ : Finset Qubit) = {Qubit.zero, Qubit.one} := by
+        ext q; cases q <;> simp
+      simp [h_univ]
+    }
+    _ = (∑ x : BitString n, ψ (Fin.snoc x Qubit.zero)) + (∑ x : BitString n, ψ (Fin.snoc x Qubit.one)) := by rw [Finset.sum_add_distrib]
+}
+
+/- MATH LEMMAS -/
+lemma bs_xor_comm {n : ℕ} (a b : BitString n) : bs_xor a b = bs_xor b a := by {
+  funext i
+  simp [bs_xor, bxor]
+  cases (a i) <;> cases (b i) <;> rfl
+}
+
+lemma bs_xor_distrib {n : ℕ} (a b c : BitString n) : bs_xor (bs_xor a b) c = bs_xor a (bs_xor b c) := by {
+  funext i
+  simp [bs_xor, bxor]
+  cases (a i) <;> cases (b i) <;> cases (c i) <;> rfl
+}
+
+lemma band_comm (x y : Qubit) : band x y = band y x := by {
+  cases x <;> cases y <;> rfl
+}
+
+lemma band_bxor_distrib (x y z : Qubit) :
+band (bxor x y) z = bxor (band x z) (band y z) := by {
+  cases x <;> cases y <;> cases z <;> rfl
+}
+
+lemma dot_product_comm {n : ℕ} (x y : BitString n) :
+dot_product x y = dot_product y x := by {
+  unfold dot_product
+  simp
+  induction n with
+  | zero => rfl
+  | succ n ih =>
+    unfold dot_product
+    simp
+    rw [ih, band_comm]
+}
+
+lemma bxor_assoc (a b c : Qubit) : bxor (bxor a b) c = bxor a (bxor b c) := by {
+  cases a <;> cases b <;> cases c <;> rfl
+}
+
+lemma bxor_left_comm (a b c : Qubit) : bxor a (bxor b c) = bxor b (bxor a c) := by {
+  cases a <;> cases b <;> cases c <;> rfl
+}
+
+-- y·0=0 for any y
+lemma dot_product_zero (n : ℕ) (y : BitString n) : dot_product y (fun _ => Qubit.zero) = Qubit.zero := by {
+  induction n with
+  | zero => rfl
+  | succ n ih =>
+    unfold dot_product
+    simp only []
+    rw [ih]
+    simp [band, bxor]
+}
+
+lemma dot_product_distrib {n : ℕ} (a b c : BitString n) :
+  dot_product (bs_xor a b) c = bxor (dot_product a c) (dot_product b c) := by {
+  induction n with
+  | zero => rfl
+  | succ n ih =>
+    have band_bxor_distrib (x y z : Qubit) : band (bxor x y) z = bxor (band x z) (band y z) := by {
+      cases x <;> cases y <;> cases z <;> rfl
+    }
+    unfold dot_product
+    simp only [bs_xor]
+    rw [band_bxor_distrib]
+    change bxor (bxor (band (a 0) (c 0)) (band (b 0) (c 0)))
+      (dot_product (bs_xor (fun i ↦ a i.succ) (fun i ↦ b i.succ)) (fun i ↦ c i.succ)) = _
+    rw [ih]
+    simp only [bxor_assoc, bxor_left_comm]
+}
+
+lemma bs_xor_self {n : ℕ} (x : BitString n) : bs_xor x x = (fun _ => Qubit.zero) := by {
+  funext i
+  simp [bs_xor, bxor]
+  cases (x i) <;> rfl
+}
+
+lemma dot_product_snoc_gen {n : ℕ} (a b : BitString (n + 1)) :
+dot_product a b =
+bxor (dot_product (fun i => a i.castSucc) (fun i => b i.castSucc)) (band (a (Fin.last n)) (b (Fin.last n))) := by {
+  induction n with
+  | zero =>
+    simp [dot_product, bxor, band]
+    cases h0 : a ⟨0, by omega⟩ <;> cases h1 : b ⟨0, by omega⟩ <;> simp_all
+  | succ n ih =>
+    simp only [dot_product]
+    have ih' := ih (fun i => a i.succ) (fun i => b i.succ)
+    simp only [dot_product] at ih'
+    rw [bxor_assoc, ih', ← bxor_assoc, ← bxor_assoc]
+    congr 1
+}
+
+lemma dot_product_snoc {k : ℕ} (x : BitString k) (b : Qubit) (y : BitString (k + 1)) :
+    dot_product (Fin.snoc x b) y =
+    bxor (dot_product x (fun i => y i.castSucc)) (band b (y (Fin.last k))) := by {
+  rw [dot_product_snoc_gen (Fin.snoc x b) y]
+  congr 2
+  · simp [Fin.snoc_castSucc]
+  · simp [Fin.snoc_last]
 }

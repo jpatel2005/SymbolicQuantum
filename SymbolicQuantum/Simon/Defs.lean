@@ -6,6 +6,13 @@ open QGate QCircuit
 
 -- (Simon's Algorithm Definitions)
 
+def combine {n m : ℕ} (ψ : BitString n) (φ : BitString m) : BitString (n + m) :=
+  fun i =>
+    if h : i < n then
+      ψ ⟨i, h⟩
+    else
+      φ ⟨i - n, by omega⟩
+
 def H_init_simon (n m : ℕ) : QCircuit (n+m) :=
   QRange_H (n+m) 0 n
 
@@ -20,23 +27,6 @@ def simon (n m : ℕ) (f : BitString n → BitString m) : QCircuit (n+m) :=
   oracle_block_simon n m f ≫
   H_post_simon n m
 
-def bxor (q1 q2 : Qubit) : Qubit :=
-  match q1, q2 with
-  | Qubit.zero, Qubit.zero => Qubit.zero
-  | Qubit.zero, Qubit.one  => Qubit.one
-  | Qubit.one,  Qubit.zero => Qubit.one
-  | Qubit.one,  Qubit.one  => Qubit.zero
-
-def dot_product {n : ℕ} (a b : BitString n) : Qubit :=
-  (List.finRange n).foldl (fun acc i =>
-    let bit_a := a i
-    let bit_b := b i
-    match acc, bit_a, bit_b with
-    | Qubit.zero, Qubit.one, Qubit.one => Qubit.one
-    | Qubit.one,  Qubit.one, Qubit.one => Qubit.zero
-    | _, _, _ => acc
-  ) Qubit.zero
-
 -- Probability of observing 'y' in the first n qubits
 noncomputable def prob_measure_y {n m : ℕ} (ψ : QState (n + m)) (y : BitString n) : ℝ :=
   ∑ z : BitString m, Complex.normSq (ψ (fun i =>
@@ -45,6 +35,15 @@ noncomputable def prob_measure_y {n m : ℕ} (ψ : QState (n + m)) (y : BitStrin
     else
       z ⟨i - n, by omega⟩
   ))
+
+noncomputable def ket_simon (n m : ℕ) (f : BitString n → BitString m) : QState (n + m) :=
+  fun bs =>
+    let x := fun (i : Fin n) => bs ⟨i, by omega⟩
+    let z := fun (i : Fin m) => bs ⟨n + i, by omega⟩
+    if z = f x then
+      (1 / Real.sqrt (2 ^ n) : ℂ)
+    else
+      0
 
 -- f(x) = f(z) ↔ (x = z) ∨ (x = z ⊕ s)
 def simons_promise {n m : ℕ} (f : BitString n → BitString m) (s : BitString n) :=

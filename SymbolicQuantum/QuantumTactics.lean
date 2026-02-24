@@ -79,6 +79,7 @@ macro_rules
         try unfold ketM;
         try unfold ket0;
         try unfold basis_state;
+        try unfold Qubit.toNat;
         try simp
       )
     )

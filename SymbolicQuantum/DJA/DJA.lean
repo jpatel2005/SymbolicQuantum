@@ -238,32 +238,6 @@ lemma oracle_balanced_action {n : ℕ} (f : BitString n → Bool) :
 
 -- balanced correctness lemmas
 
-lemma sum_bitstring_split_last (n : ℕ) (ψ : BitString (n + 1) → ℂ) :
-  ∑ x : BitString (n + 1), ψ x =
-  (∑ x : BitString n, ψ (Fin.snoc x Qubit.zero)) +
-  (∑ x : BitString n, ψ (Fin.snoc x Qubit.one)) := by {
-  let iso : BitString (n + 1) ≃ BitString n × Qubit := {
-    toFun := fun f => (Fin.init f, f (Fin.last n))
-    invFun := fun ⟨g, a⟩ => Fin.snoc g a
-    left_inv := fun _ => by simp
-    right_inv := fun _ => by simp
-  }
-  calc
-    ∑ x : BitString (n + 1), ψ x = ∑ y : BitString n × Qubit, ψ (Fin.snoc y.1 y.2) := by {
-      rw [Fintype.sum_equiv iso]
-      simp[iso]
-    }
-    _ = ∑ x : BitString n, ∑ a : Qubit, ψ (Fin.snoc x a) := by rw [Fintype.sum_prod_type]
-    _ = ∑ x : BitString n, (ψ (Fin.snoc x Qubit.zero) + ψ (Fin.snoc x Qubit.one)) := by {
-      congr
-      funext x
-      have h_univ : (Finset.univ : Finset Qubit) = {Qubit.zero, Qubit.one} := by
-        ext q; cases q <;> simp
-      simp [h_univ]
-    }
-    _ = (∑ x : BitString n, ψ (Fin.snoc x Qubit.zero)) + (∑ x : BitString n, ψ (Fin.snoc x Qubit.one)) := by rw [Finset.sum_add_distrib]
-}
-
 -- generalized lemma
 -- disjoint indices commute through QRange_H
 lemma QRange_H_flip_invariant_gen (m k : ℕ) (n_idx : Fin (m + 1)) (h_disjoint : k ≤ n_idx)
