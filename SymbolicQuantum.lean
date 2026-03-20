@@ -12,5 +12,7 @@ import «SymbolicQuantum».DJA.Deutsch
 import «SymbolicQuantum».DJA.DJA
 -- Simon
 import «SymbolicQuantum».Simon.Simon
+-- Shor
+import «SymbolicQuantum».Shor.Shor
 -- Misc
 import «SymbolicQuantum».QuantumCircuitEquiv
