@@ -803,10 +803,8 @@ lemma successful_choices_ge_half {p q : ℕ} (hp : Nat.Prime p) (hq : Nat.Prime 
       rintro rfl; exact one_not_successful_choice _ hsucc
     omega
 
-theorem shors_probability_bound (N : ℕ)
+theorem shors_probability_bound_semiprime (N : ℕ)
 (h_odd : Odd N)
--- (h_composite : ¬Nat.Prime N)
--- (h_not_prime_power : ∀ (p k : ℕ), Nat.Prime p → N ≠ p ^ k)
 (h_prime_factors : ∃ p q, Nat.Prime p ∧ Nat.Prime q ∧ p ≠ q ∧ N = p * q) :
 2 * (successful_choices N).card ≥ (valid_choices N).card := by {
   obtain ⟨p, q, hp, hq, hpq, hN⟩ := h_prime_factors
@@ -823,3 +821,17 @@ theorem shors_probability_bound (N : ℕ)
     _ ≤ (p - 1) * (q - 1) := Nat.sub_le _ _
     _ ≤ 2 * (successful_choices (p * q)).card := successful_choices_ge_half hp hq hpq hp2 hq2
 }
+
+/-- **Shor's probability bound (general).**
+    If N > 1 is odd and not a prime power (i.e., has at least two distinct prime factors),
+    then at least half of the valid choices of `a` satisfy Shor's success conditions.
+
+    This generalises `shors_probability_bound_semiprime` from N = p·q to arbitrary N
+    by extracting two distinct prime factors p, q ∣ N and reducing to the semiprime
+    sub-case via the surjection (ℤ/Nℤ)* ↠ (ℤ/pℤ)* × (ℤ/qℤ)*. -/
+theorem shors_probability_bound (N : ℕ)
+    (h_odd : Odd N)
+    (h_gt_one : N > 1)
+    (h_not_prime_power : ∀ (p k : ℕ), Nat.Prime p → N ≠ p ^ k) :
+    2 * (successful_choices N).card ≥ (valid_choices N).card := by
+  sorry
