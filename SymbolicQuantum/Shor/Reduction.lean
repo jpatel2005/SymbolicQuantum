@@ -66,7 +66,31 @@ lemma gcd_nontrivial_from_product (x N : ℕ)
   (h_not_minus_one : (x : ZMod N) ≠ -1) :
   is_nontrivial_factor (Nat.gcd (x - 1) N) N ∨
   is_nontrivial_factor (Nat.gcd (x + 1) N) N := by {
-  sorry
+  have h_N_ndvd_xm1 : ¬(N ∣ (x - 1)) := by
+    intro h_dvd
+    apply h_not_one
+    have h0 := (zmod_eq_zero_iff_dvd (x - 1)).mpr h_dvd
+    rw [Nat.cast_sub hx, sub_eq_zero] at h0
+    exact_mod_cast h0
+  have h_N_ndvd_xp1 : ¬(N ∣ (x + 1)) := by
+    intro h_dvd
+    apply h_not_minus_one
+    have h0 := (zmod_eq_zero_iff_dvd (x + 1)).mpr h_dvd
+    push_cast at h0
+    calc (↑x : ZMod N) = ↑x + 1 - 1 := by ring
+      _ = 0 - 1 := by rw [h0]
+      _ = -1 := by ring
+  left
+  refine ⟨?_, ?_, Nat.gcd_dvd_right _ _⟩
+  · by_contra h_le
+    push_neg at h_le
+    have h_cop : Nat.gcd (x - 1) N = 1 := by
+      have := Nat.gcd_pos_of_pos_right (x - 1) (show 0 < N by omega)
+      omega
+    exact h_N_ndvd_xp1 ((Nat.Coprime.symm h_cop).dvd_of_dvd_mul_left h)
+  · exact lt_of_le_of_ne
+      (Nat.le_of_dvd (by omega) (Nat.gcd_dvd_right _ _))
+      (fun h_eq => h_N_ndvd_xm1 (h_eq ▸ Nat.gcd_dvd_left _ _))
 }
 
 -- Two conditions:
