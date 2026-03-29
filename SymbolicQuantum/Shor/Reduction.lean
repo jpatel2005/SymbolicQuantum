@@ -24,14 +24,6 @@ def is_nontrivial_factor (d N : ℕ) : Prop :=
 def mod_exp (a r N : ℕ) : ZMod N :=
   (a : ZMod N) ^ r
 
-/-
--- All integers k less than r cannot satisfy a^k ≡ 1 (mod N)
-def is_period (a r N : ℕ) : Prop :=
-  r > 0 ∧
-  mod_exp a r N = 1 ∧
-  ∀ k, 0 < k → k < r → mod_exp a k N ≠ 1
--/
-
 def is_period (a r N : ℕ) : Prop :=
   orderOf (a : ZMod N) = r
 
@@ -1195,7 +1187,7 @@ private lemma general_unsuccessful_bound {N p q : ℕ}
         simpa [himage, U] using htmp
       exact htmp'
     have hUcard : Fintype.card U = Nat.totient N := by
-      simpa [U] using (ZMod.card_units_eq_totient N)
+      simp [U]
     calc
       2 * ((Finset.range N).filter (fun a => Nat.gcd a N = 1 ∧ ¬is_successful_choice a N)).card
         = 2 * badNat.card := by rfl
