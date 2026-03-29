@@ -55,12 +55,6 @@ lemma zmod_eq_zero_iff_dvd {N : ℕ} (x : ℕ) :
   exact ZMod.natCast_eq_zero_iff x N
 
 
-#check ZMod.natCast_zmod_eq_zero_iff_dvd
-#check Nat.Coprime
-#check Nat.gcd_dvd_right
-#check Nat.gcd_dvd_left
-#check Nat.eq_one_of_dvd_one
-
 -- Given that N divides the product (x - 1)(x + 1), and x is not congruent
 -- to ±1 mod N, then one of the two GCDs will yield a non-trivial factor of N.
 lemma gcd_nontrivial_from_product (x N : ℕ)
@@ -879,13 +873,116 @@ private lemma valid_choices_card_general {N : ℕ} (hN : N > 1) :
     This is the forward direction of the "bad" characterization, generalised from N = pq
     to arbitrary N with p ∣ N, q ∣ N. -/
 private lemma unsuccessful_implies_v2_match {N p q a : ℕ}
-    (hp : Nat.Prime p) (hq : Nat.Prime q) (hpq : p ≠ q)
+    (hp : Nat.Prime p) (hq : Nat.Prime q) (_hpq : p ≠ q)
     (hp2 : p ≠ 2) (hq2 : q ≠ 2)
     (hpN : p ∣ N) (hqN : q ∣ N)
     (hcop : Nat.Coprime a N)
     (hbad : ¬is_successful_choice a N) :
     (orderOf (a : ZMod p)).factorization 2 = (orderOf (a : ZMod q)).factorization 2 := by
-  sorry
+  let l := orderOf (a : ZMod N)
+  have hap : Nat.Coprime a p := Nat.Coprime.of_dvd_right hpN hcop
+  have haq : Nat.Coprime a q := Nat.Coprime.of_dvd_right hqN hcop
+  haveI : Fact p.Prime := ⟨hp⟩
+  haveI : Fact q.Prime := ⟨hq⟩
+  have hap0 : (a : ZMod p) ≠ 0 := by
+    intro h0
+    exact (hp.coprime_iff_not_dvd).1 hap.symm <| (zmod_eq_zero_iff_dvd (N := p) a).1 h0
+  have haq0 : (a : ZMod q) ≠ 0 := by
+    intro h0
+    exact (hq.coprime_iff_not_dvd).1 haq.symm <| (zmod_eq_zero_iff_dvd (N := q) a).1 h0
+  let r := orderOf (a : ZMod p)
+  let s := orderOf (a : ZMod q)
+  have hpord_pos : 0 < r := by
+    exact Nat.pos_of_dvd_of_pos (ZMod.orderOf_dvd_card_sub_one hap0) (Nat.sub_pos_of_lt hp.one_lt)
+  have hqord_pos : 0 < s := by
+    exact Nat.pos_of_dvd_of_pos (ZMod.orderOf_dvd_card_sub_one haq0) (Nat.sub_pos_of_lt hq.one_lt)
+  have hpdvd : r ∣ l := by
+    simpa [l, r] using (orderOf_map_dvd (ZMod.castHom hpN (ZMod p)).toMonoidHom (a : ZMod N))
+  have hqdvd : s ∣ l := by
+    simpa [l, s] using (orderOf_map_dvd (ZMod.castHom hqN (ZMod q)).toMonoidHom (a : ZMod N))
+  have hbad' := (not_successful_iff a N).1 hbad
+  rcases hbad' with hl_odd | hneg
+  · have hlodd : Odd l := Nat.not_even_iff_odd.mp hl_odd
+    have hl0 : l ≠ 0 := by
+      rcases hlodd with ⟨k, hk⟩
+      omega
+    have hpfac0 : r.factorization 2 = 0 := by
+      have hle := (Nat.factorization_le_iff_dvd hpord_pos.ne' hl0).2 hpdvd 2
+      have hl2 : l.factorization 2 = 0 := (odd_iff_factorization_two_eq_zero hl0).1 hlodd
+      omega
+    have hqfac0 : s.factorization 2 = 0 := by
+      have hle := (Nat.factorization_le_iff_dvd hqord_pos.ne' hl0).2 hqdvd 2
+      have hl2 : l.factorization 2 = 0 := (odd_iff_factorization_two_eq_zero hl0).1 hlodd
+      omega
+    simpa [r, s] using hpfac0.trans hqfac0.symm
+  · have hpowp : (a : ZMod p) ^ (l / 2) = -1 := by
+      have hmap := congrArg (ZMod.castHom hpN (ZMod p)) hneg
+      rw [map_pow, map_neg, map_one] at hmap
+      simpa [l, ZMod.castHom_apply] using hmap
+    have hpowq : (a : ZMod q) ^ (l / 2) = -1 := by
+      have hmap := congrArg (ZMod.castHom hqN (ZMod q)) hneg
+      rw [map_pow, map_neg, map_one] at hmap
+      simpa [l, ZMod.castHom_apply] using hmap
+    have hp_gt_two : 2 < p := by
+      have hp1 : 1 < p := hp.one_lt
+      omega
+    have hq_gt_two : 2 < q := by
+      have hq1 : 1 < q := hq.one_lt
+      omega
+    haveI : Fact (2 < p) := ⟨hp_gt_two⟩
+    haveI : Fact (2 < q) := ⟨hq_gt_two⟩
+    have hpowp_ne : (a : ZMod p) ^ (l / 2) ≠ 1 := by
+      intro h1
+      exact ZMod.neg_one_ne_one (hpowp.symm.trans h1)
+    have hpowq_ne : (a : ZMod q) ^ (l / 2) ≠ 1 := by
+      intro h1
+      exact ZMod.neg_one_ne_one (hpowq.symm.trans h1)
+    have hl0 : l ≠ 0 := by
+      intro hlz
+      exact ZMod.neg_one_ne_one (by simpa [hlz] using hpowp.symm)
+    have hpodd : Odd (l / r) :=
+      Nat.not_even_iff_odd.mp <| by
+        intro hEven
+        rcases hEven with ⟨k, hk⟩
+        apply hpowp_ne
+        have hl_eq : l = r * (2 * k) := by
+          have hmul := Nat.div_mul_cancel hpdvd
+          rw [hk] at hmul
+          calc
+            l = (k + k) * r := hmul.symm
+            _ = r * (2 * k) := by ring
+        have hhalf : l / 2 = r * k := by
+          calc
+            l / 2 = (r * (2 * k)) / 2 := by rw [hl_eq]
+            _ = (2 * (r * k)) / 2 := by ring_nf
+            _ = r * k := by rw [Nat.mul_div_right (r * k) (by norm_num)]
+        have hpowr : (a : ZMod p) ^ r = 1 := by
+          simp [r]
+        rw [hhalf, pow_mul, hpowr, one_pow]
+    have hqodd : Odd (l / s) :=
+      Nat.not_even_iff_odd.mp <| by
+        intro hEven
+        rcases hEven with ⟨k, hk⟩
+        apply hpowq_ne
+        have hl_eq : l = s * (2 * k) := by
+          have hmul := Nat.div_mul_cancel hqdvd
+          rw [hk] at hmul
+          calc
+            l = (k + k) * s := hmul.symm
+            _ = s * (2 * k) := by ring
+        have hhalf : l / 2 = s * k := by
+          calc
+            l / 2 = (s * (2 * k)) / 2 := by rw [hl_eq]
+            _ = (2 * (s * k)) / 2 := by ring_nf
+            _ = s * k := by rw [Nat.mul_div_right (s * k) (by norm_num)]
+        have hpows : (a : ZMod q) ^ s = 1 := by
+          simp [s]
+        rw [hhalf, pow_mul, hpows, one_pow]
+    have hpfac : l.factorization 2 = r.factorization 2 :=
+      (odd_div_iff_factorization_two_eq hl0 hpdvd).1 hpodd
+    have hqfac : l.factorization 2 = s.factorization 2 :=
+      (odd_div_iff_factorization_two_eq hl0 hqdvd).1 hqodd
+    simpa [r, s] using hpfac.symm.trans hqfac
 
 /-- Pure pair counting: among all pairs in (ℤ/pℤ)ˣ × (ℤ/qℤ)ˣ, at most half have
     matching 2-adic valuations of their component orders.
@@ -896,7 +993,43 @@ private lemma bad_pairs_le_half {p q : ℕ} (hp : Nat.Prime p) (hq : Nat.Prime q
     2 * (Finset.univ.filter (fun uv : (ZMod p)ˣ × (ZMod q)ˣ =>
       (orderOf uv.1).factorization 2 = (orderOf uv.2).factorization 2)).card
     ≤ Fintype.card ((ZMod p)ˣ × (ZMod q)ˣ) := by
-  sorry
+  letI : NeZero p := ⟨hp.ne_zero⟩
+  letI : NeZero q := ⟨hq.ne_zero⟩
+  let pairBadPred : ((ZMod p)ˣ × (ZMod q)ˣ) → Prop := fun uv =>
+    (orderOf uv.1).factorization 2 = (orderOf uv.2).factorization 2
+  let badPairs : Finset ((ZMod p)ˣ × (ZMod q)ˣ) := Finset.univ.filter pairBadPred
+  let goodPairs : Finset ((ZMod p)ˣ × (ZMod q)ˣ) := Finset.univ.filter (fun uv => ¬pairBadPred uv)
+  letI : Fact p.Prime := ⟨hp⟩
+  obtain ⟨g, hg⟩ :=
+    isCyclic_iff_exists_orderOf_eq_natCard.mp (ZMod.isCyclic_units_prime hp)
+  have hg : orderOf g = p - 1 := by
+    rw [Nat.card_eq_fintype_card, ZMod.card_units] at hg
+    exact hg
+  let shift : ((ZMod p)ˣ × (ZMod q)ˣ) → ((ZMod p)ˣ × (ZMod q)ˣ) := fun uv => (uv.1 * g, uv.2)
+  have h_badPairs_le_goodPairs : badPairs.card ≤ goodPairs.card := by
+    apply Finset.card_le_card_of_injOn shift
+    · intro uv huv
+      have huv_bad : pairBadPred uv := by
+        simpa [badPairs] using huv
+      change shift uv ∈ Finset.univ.filter (fun uv => ¬pairBadPred uv)
+      simp [Finset.mem_filter]
+      intro hshift_bad
+      exact order_factorization_two_mul_generator_ne hp hp2 hg <|
+        hshift_bad.trans huv_bad.symm
+    · intro uv _ vw _ hEq
+      rcases Prod.mk.inj hEq with ⟨h1, h2⟩
+      apply Prod.ext
+      · exact mul_right_cancel h1
+      · exact h2
+  have h_pair_partition :
+      badPairs.card + goodPairs.card = (Finset.univ : Finset ((ZMod p)ˣ × (ZMod q)ˣ)).card := by
+    simpa [badPairs, goodPairs] using
+      (Finset.filter_card_add_filter_neg_card_eq_card pairBadPred
+        (s := (Finset.univ : Finset ((ZMod p)ˣ × (ZMod q)ˣ))))
+  have h_badPairs_bound :
+      2 * badPairs.card ≤ (Finset.univ : Finset ((ZMod p)ˣ × (ZMod q)ˣ)).card := by
+    omega
+  simpa [badPairs] using h_badPairs_bound
 
 /-- The main counting bound for general N: at most half of the coprime residues mod N
     are unsuccessful for Shor's algorithm.
@@ -914,7 +1047,164 @@ private lemma general_unsuccessful_bound {N p q : ℕ}
     2 * ((Finset.range N).filter (fun a =>
       Nat.gcd a N = 1 ∧ ¬is_successful_choice a N)).card
     ≤ Nat.totient N := by
-  sorry
+  by_cases hN0 : N = 0
+  · subst hN0
+    simp
+  · letI : NeZero N := ⟨hN0⟩
+    letI : NeZero p := ⟨hp.ne_zero⟩
+    letI : NeZero q := ⟨hq.ne_zero⟩
+    let U := (ZMod N)ˣ
+    haveI : Fintype U := by dsimp [U]; infer_instance
+    haveI : DecidableEq U := by dsimp [U]; infer_instance
+    let hpqcop : Nat.Coprime p q := (Nat.coprime_primes hp hq).mpr hpq
+    have hpqN : p * q ∣ N := hpqcop.mul_dvd_of_dvd_of_dvd hpN hqN
+    let φpq : (ZMod (p * q))ˣ ≃* ((ZMod p)ˣ × (ZMod q)ˣ) :=
+      (Units.mapEquiv (ZMod.chineseRemainder hpqcop).toMulEquiv).trans
+        (@MulEquiv.prodUnits (ZMod p) (ZMod q) _ _)
+    let ψ : U →* ((ZMod p)ˣ × (ZMod q)ˣ) := φpq.toMonoidHom.comp (ZMod.unitsMap hpqN)
+    let pairBadPred : ((ZMod p)ˣ × (ZMod q)ˣ) → Prop := fun uv =>
+      (orderOf uv.1).factorization 2 = (orderOf uv.2).factorization 2
+    let badPairs : Finset ((ZMod p)ˣ × (ZMod q)ˣ) := Finset.univ.filter pairBadPred
+    let badUnits : Finset U := Finset.univ.filter (fun u => pairBadPred (ψ u))
+    let badNat := (Finset.range N).filter (fun a =>
+      Nat.gcd a N = 1 ∧ ¬is_successful_choice a N)
+    let n := ((Finset.univ : Finset U).filter fun u => ψ u = 1).card
+    let natToUnit : ℕ → U := fun a =>
+      if hcop : Nat.Coprime a N then ZMod.unitOfCoprime a hcop else 1
+    have hψ_surj : Function.Surjective ψ := by
+      intro uv
+      obtain ⟨u, hu⟩ := ZMod.unitsMap_surjective hpqN (φpq.symm uv)
+      refine ⟨u, ?_⟩
+      change φpq (ZMod.unitsMap hpqN u) = uv
+      rw [hu, φpq.apply_symm_apply]
+    have h_fiber : ∀ uv : ((ZMod p)ˣ × (ZMod q)ˣ),
+        ((Finset.univ : Finset U).filter fun u => ψ u = uv).card = n := by
+      intro uv
+      simpa [n] using (MonoidHom.card_fiber_eq_of_mem_range ψ (hψ_surj uv) (hψ_surj 1))
+    have hψ_unitOfCoprime {a : ℕ} (hcop : Nat.Coprime a N) :
+        ψ (ZMod.unitOfCoprime a hcop)
+          =
+            (ZMod.unitOfCoprime a (Nat.Coprime.of_dvd_right hpN hcop),
+             ZMod.unitOfCoprime a (Nat.Coprime.of_dvd_right hqN hcop)) := by
+      have hacop_pq : Nat.Coprime a (p * q) := Nat.Coprime.of_dvd_right hpqN hcop
+      have hu_pq :
+          ZMod.unitsMap hpqN (ZMod.unitOfCoprime a hcop) = ZMod.unitOfCoprime a hacop_pq := by
+        apply Units.ext
+        change ((((ZMod.unitOfCoprime a hcop : U) : ZMod N)).cast : ZMod (p * q)) = (a : ZMod (p * q))
+        rw [ZMod.coe_unitOfCoprime]
+        simpa using (ZMod.cast_natCast (R := ZMod (p * q)) hpqN a)
+      calc
+        ψ (ZMod.unitOfCoprime a hcop) = φpq (ZMod.unitsMap hpqN (ZMod.unitOfCoprime a hcop)) := by
+          rfl
+        _ = φpq (ZMod.unitOfCoprime a hacop_pq) := by rw [hu_pq]
+        _ =
+            (ZMod.unitOfCoprime a (Nat.Coprime.of_dvd_right hpN hcop),
+             ZMod.unitOfCoprime a (Nat.Coprime.of_dvd_right hqN hcop)) := by
+          simpa [φpq] using crt_units_unitOfCoprime hacop_pq hpqcop
+    have h_pairBad_of_unsuccessful {a : ℕ} (hcop : Nat.Coprime a N)
+        (hbad : ¬is_successful_choice a N) :
+        pairBadPred (ψ (ZMod.unitOfCoprime a hcop)) := by
+      have hmatch := unsuccessful_implies_v2_match hp hq hpq hp2 hq2 hpN hqN hcop hbad
+      have hpord :
+          orderOf (a : ZMod p) =
+            orderOf (ZMod.unitOfCoprime a (Nat.Coprime.of_dvd_right hpN hcop)) := by
+        simpa [ZMod.coe_unitOfCoprime] using
+          (orderOf_units (y := ZMod.unitOfCoprime a (Nat.Coprime.of_dvd_right hpN hcop)))
+      have hqord :
+          orderOf (a : ZMod q) =
+            orderOf (ZMod.unitOfCoprime a (Nat.Coprime.of_dvd_right hqN hcop)) := by
+        simpa [ZMod.coe_unitOfCoprime] using
+          (orderOf_units (y := ZMod.unitOfCoprime a (Nat.Coprime.of_dvd_right hqN hcop)))
+      rw [hψ_unitOfCoprime hcop]
+      change
+        (orderOf (ZMod.unitOfCoprime a (Nat.Coprime.of_dvd_right hpN hcop))).factorization 2
+          =
+        (orderOf (ZMod.unitOfCoprime a (Nat.Coprime.of_dvd_right hqN hcop))).factorization 2
+      simpa [hpord, hqord] using hmatch
+    have h_badNat_le_badUnits : badNat.card ≤ badUnits.card := by
+      apply Finset.card_le_card_of_injOn natToUnit
+      · intro a ha
+        change a ∈ (Finset.range N).filter (fun a => Nat.gcd a N = 1 ∧ ¬is_successful_choice a N) at ha
+        rw [Finset.mem_filter] at ha
+        have hacop : Nat.Coprime a N := by
+          rw [Nat.coprime_iff_gcd_eq_one]
+          exact ha.2.1
+        change natToUnit a ∈ Finset.univ.filter (fun u => pairBadPred (ψ u))
+        rw [Finset.mem_filter]
+        refine ⟨by simp, ?_⟩
+        dsimp [natToUnit]
+        simpa [dif_pos hacop] using h_pairBad_of_unsuccessful hacop ha.2.2
+      · intro a ha b hb hEq
+        change a ∈ (Finset.range N).filter (fun a => Nat.gcd a N = 1 ∧ ¬is_successful_choice a N) at ha
+        change b ∈ (Finset.range N).filter (fun a => Nat.gcd a N = 1 ∧ ¬is_successful_choice a N) at hb
+        rw [Finset.mem_filter] at ha hb
+        have hacop : Nat.Coprime a N := by
+          rw [Nat.coprime_iff_gcd_eq_one]
+          exact ha.2.1
+        have hbcop : Nat.Coprime b N := by
+          rw [Nat.coprime_iff_gcd_eq_one]
+          exact hb.2.1
+        have ha_lt : a < N := Finset.mem_range.mp ha.1
+        have hb_lt : b < N := Finset.mem_range.mp hb.1
+        have hnatA : natToUnit a = ZMod.unitOfCoprime a hacop := by
+          simp [natToUnit, dif_pos hacop]
+        have hnatB : natToUnit b = ZMod.unitOfCoprime b hbcop := by
+          simp [natToUnit, dif_pos hbcop]
+        have hunit : ZMod.unitOfCoprime a hacop = ZMod.unitOfCoprime b hbcop := by
+          calc
+            ZMod.unitOfCoprime a hacop = natToUnit a := hnatA.symm
+            _ = natToUnit b := hEq
+            _ = ZMod.unitOfCoprime b hbcop := hnatB
+        have hzmod : (a : ZMod N) = (b : ZMod N) := by
+          simpa [U, ZMod.coe_unitOfCoprime] using
+            congrArg (fun u : U => (u : ZMod N)) hunit
+        have hmod := (ZMod.natCast_eq_natCast_iff' a b N).1 hzmod
+        simpa [Nat.mod_eq_of_lt ha_lt, Nat.mod_eq_of_lt hb_lt] using hmod
+    have h_badPairs_bound : 2 * badPairs.card ≤ Fintype.card ((ZMod p)ˣ × (ZMod q)ˣ) := by
+      simpa [badPairs, pairBadPred] using bad_pairs_le_half hp hq hp2 hq2
+    have h_badUnits_le : badUnits.card ≤ n * badPairs.card := by
+      refine Finset.card_le_mul_card_image_of_maps_to (s := badUnits) (t := badPairs) (f := ψ) ?_ n ?_
+      · intro u hu
+        simpa [badUnits, badPairs] using hu
+      · intro uv huv
+        have huv_bad : pairBadPred uv := by
+          simpa [badPairs] using huv
+        have hfilter_eq :
+            badUnits.filter (fun u => ψ u = uv) = (Finset.univ : Finset U).filter (fun u => ψ u = uv) := by
+          ext u
+          by_cases hu : ψ u = uv
+          · simp [badUnits, hu, huv_bad]
+          · simp [badUnits, hu]
+        calc
+          (badUnits.filter fun u => ψ u = uv).card
+              = ((Finset.univ : Finset U).filter fun u => ψ u = uv).card := by
+            rw [hfilter_eq]
+          _ = n := h_fiber uv
+          _ ≤ n := le_rfl
+    have h_total_lower : n * Fintype.card ((ZMod p)ˣ × (ZMod q)ˣ) ≤ Fintype.card U := by
+      have himage :
+          (Finset.univ : Finset U).image ψ = (Finset.univ : Finset ((ZMod p)ˣ × (ZMod q)ˣ)) := by
+        ext uv
+        simp [hψ_surj uv]
+      have htmp :
+          n * ((Finset.univ : Finset U).image ψ).card ≤ (Finset.univ : Finset U).card := by
+        refine Finset.mul_card_image_le_card (s := (Finset.univ : Finset U)) (f := ψ) n ?_
+        intro uv huv
+        rw [h_fiber uv]
+      have htmp' : n * Fintype.card ((ZMod p)ˣ × (ZMod q)ˣ) ≤ Fintype.card U := by
+        simpa [himage, U] using htmp
+      exact htmp'
+    have hUcard : Fintype.card U = Nat.totient N := by
+      simpa [U] using (ZMod.card_units_eq_totient N)
+    calc
+      2 * ((Finset.range N).filter (fun a => Nat.gcd a N = 1 ∧ ¬is_successful_choice a N)).card
+        = 2 * badNat.card := by rfl
+      _ ≤ 2 * badUnits.card := Nat.mul_le_mul_left 2 h_badNat_le_badUnits
+      _ ≤ 2 * (n * badPairs.card) := Nat.mul_le_mul_left 2 h_badUnits_le
+      _ = n * (2 * badPairs.card) := by ring
+      _ ≤ n * Fintype.card ((ZMod p)ˣ × (ZMod q)ˣ) := Nat.mul_le_mul_left n h_badPairs_bound
+      _ ≤ Fintype.card U := h_total_lower
+      _ = Nat.totient N := hUcard
 
 /-- **Shor's probability bound (general).**
     If N > 1 is odd and not a prime power (i.e., has at least two distinct prime factors),
