@@ -822,6 +822,100 @@ theorem shors_probability_bound_semiprime (N : ℕ)
     _ ≤ 2 * (successful_choices (p * q)).card := successful_choices_ge_half hp hq hpq hp2 hq2
 }
 
+/-- If N > 1 and N is not a prime power, then N has at least two distinct prime factors.
+    Proof: take p = minFac, divide out all p-factors to get M = N / p^v_p(N).
+    Since N ≠ p^k, M ≠ 1, so M has a prime factor q = minFac(M) with q ≠ p. -/
+private lemma exists_two_distinct_prime_factors {N : ℕ} (hN : N > 1)
+    (h : ∀ (p k : ℕ), Nat.Prime p → N ≠ p ^ k) :
+    ∃ p q, Nat.Prime p ∧ Nat.Prime q ∧ p ≠ q ∧ p ∣ N ∧ q ∣ N := by
+  have hN0 : N ≠ 0 := by omega
+  set p := N.minFac
+  have hp : p.Prime := Nat.minFac_prime (by omega)
+  have hpN : p ∣ N := Nat.minFac_dvd N
+  set M := N / p ^ N.factorization p
+  have hM_ne_one : M ≠ 1 := by
+    intro hM1
+    apply h p (N.factorization p) hp
+    have key : p ^ N.factorization p * M = N := Nat.ordProj_mul_ordCompl_eq_self N p
+    rw [hM1, mul_one] at key
+    exact key.symm
+  set q := M.minFac
+  have hq : q.Prime := Nat.minFac_prime hM_ne_one
+  have hqM : q ∣ M := Nat.minFac_dvd M
+  have hpq : p ≠ q := by
+    intro heq
+    have h_dvd : p ∣ M := by rwa [heq]
+    exact (Nat.not_dvd_ordCompl hp hN0) h_dvd
+  exact ⟨p, q, hp, hq, hpq, hpN, dvd_trans hqM (Nat.ordCompl_dvd N p)⟩
+
+/-- For N > 1, valid_choices(N) has cardinality φ(N) - 1.
+    valid_choices excludes a = 0 (not coprime) and a = 1 (trivial order),
+    so it is the totient set minus {1}. -/
+private lemma valid_choices_card_general {N : ℕ} (hN : N > 1) :
+    (valid_choices N).card = Nat.totient N - 1 := by
+  have h1_mem : (1 : ℕ) ∈ (Finset.range N).filter (Nat.Coprime N) := by
+    rw [Finset.mem_filter, Finset.mem_range]
+    exact ⟨by omega, Nat.gcd_one_right N⟩
+  have h_eq : valid_choices N = ((Finset.range N).filter (Nat.Coprime N)).erase 1 := by
+    ext a
+    simp only [valid_choices, Finset.mem_filter, Finset.mem_range, Finset.mem_erase]
+    constructor
+    · rintro ⟨ha_lt, ha_gt, ha_gcd⟩
+      refine ⟨by omega, ha_lt, ?_⟩
+      show Nat.gcd N a = 1
+      rwa [Nat.gcd_comm]
+    · rintro ⟨ha_ne, ha_lt, ha_cop⟩
+      refine ⟨ha_lt, ?_, show Nat.gcd a N = 1 by rw [Nat.gcd_comm]; exact ha_cop⟩
+      have : a ≠ 0 := by
+        intro h0; subst h0
+        unfold Nat.Coprime at ha_cop; rw [Nat.gcd_zero_right] at ha_cop; omega
+      omega
+  have hcard : ((Finset.range N).filter (Nat.Coprime N)).card = Nat.totient N := by
+    unfold Nat.totient; congr 1
+  rw [h_eq, Finset.card_erase_of_mem h1_mem, hcard]
+
+/-- For distinct odd primes p, q dividing N, if a is coprime to N and unsuccessful,
+    then the 2-adic valuations of its orders mod p and mod q match.
+    This is the forward direction of the "bad" characterization, generalised from N = pq
+    to arbitrary N with p ∣ N, q ∣ N. -/
+private lemma unsuccessful_implies_v2_match {N p q a : ℕ}
+    (hp : Nat.Prime p) (hq : Nat.Prime q) (hpq : p ≠ q)
+    (hp2 : p ≠ 2) (hq2 : q ≠ 2)
+    (hpN : p ∣ N) (hqN : q ∣ N)
+    (hcop : Nat.Coprime a N)
+    (hbad : ¬is_successful_choice a N) :
+    (orderOf (a : ZMod p)).factorization 2 = (orderOf (a : ZMod q)).factorization 2 := by
+  sorry
+
+/-- Pure pair counting: among all pairs in (ℤ/pℤ)ˣ × (ℤ/qℤ)ˣ, at most half have
+    matching 2-adic valuations of their component orders.
+    Proved by the shift injection (u,v) ↦ (u·g, v) where g generates (ℤ/pℤ)ˣ. -/
+private lemma bad_pairs_le_half {p q : ℕ} (hp : Nat.Prime p) (hq : Nat.Prime q)
+    (hp2 : p ≠ 2) (_hq2 : q ≠ 2) :
+    letI : NeZero p := ⟨hp.ne_zero⟩; letI : NeZero q := ⟨hq.ne_zero⟩
+    2 * (Finset.univ.filter (fun uv : (ZMod p)ˣ × (ZMod q)ˣ =>
+      (orderOf uv.1).factorization 2 = (orderOf uv.2).factorization 2)).card
+    ≤ Fintype.card ((ZMod p)ˣ × (ZMod q)ˣ) := by
+  sorry
+
+/-- The main counting bound for general N: at most half of the coprime residues mod N
+    are unsuccessful for Shor's algorithm.
+
+    Proof: Define pairBad(a) = v₂(ord_p(a)) = v₂(ord_q(a)). Then:
+    • unsuccessful ⊆ pairBad (via unsuccessful_implies_v2_match)
+    • pairBad depends only on (a mod p, a mod q), which lives in (ℤ/pℤ)ˣ × (ℤ/qℤ)ˣ
+    • The shift (u,v) ↦ (u·g, v) injects bad pairs into good pairs (bad_pairs_le_half)
+    • Via the surjection (ℤ/Nℤ)ˣ ↠ (ℤ/pℤ)ˣ × (ℤ/qℤ)ˣ with uniform fibers,
+      this lifts to |{pairBad}| ≤ φ(N)/2 -/
+private lemma general_unsuccessful_bound {N p q : ℕ}
+    (hp : Nat.Prime p) (hq : Nat.Prime q) (hpq : p ≠ q)
+    (hp2 : p ≠ 2) (hq2 : q ≠ 2)
+    (hpN : p ∣ N) (hqN : q ∣ N) :
+    2 * ((Finset.range N).filter (fun a =>
+      Nat.gcd a N = 1 ∧ ¬is_successful_choice a N)).card
+    ≤ Nat.totient N := by
+  sorry
+
 /-- **Shor's probability bound (general).**
     If N > 1 is odd and not a prime power (i.e., has at least two distinct prime factors),
     then at least half of the valid choices of `a` satisfy Shor's success conditions.
@@ -834,4 +928,41 @@ theorem shors_probability_bound (N : ℕ)
     (h_gt_one : N > 1)
     (h_not_prime_power : ∀ (p k : ℕ), Nat.Prime p → N ≠ p ^ k) :
     2 * (successful_choices N).card ≥ (valid_choices N).card := by
-  sorry
+  -- Step 1: Extract two distinct prime factors
+  obtain ⟨p, q, hp, hq, hpq, hpN, hqN⟩ := exists_two_distinct_prime_factors h_gt_one h_not_prime_power
+  -- Step 2: Both primes are odd (since N is odd and p, q ∣ N)
+  have hp2 : p ≠ 2 := by
+    rintro rfl; obtain ⟨k, hk⟩ := h_odd; obtain ⟨m, hm⟩ := hpN; omega
+  have hq2 : q ≠ 2 := by
+    rintro rfl; obtain ⟨k, hk⟩ := h_odd; obtain ⟨m, hm⟩ := hqN; omega
+  -- Step 3: Counting
+  have hvc := valid_choices_card_general h_gt_one
+  -- Partition coprime residues into successful and unsuccessful
+  set S := (Finset.range N).filter (fun a => Nat.gcd a N = 1) with hS_def
+  have hS_card : S.card = Nat.totient N := by
+    unfold Nat.totient; congr 1
+    apply Finset.filter_congr; intro a _
+    show Nat.gcd a N = 1 ↔ Nat.Coprime N a; rw [Nat.gcd_comm]
+  have h_unsucc_bound :
+      2 * (S.filter (fun a => ¬is_successful_choice a N)).card ≤ Nat.totient N := by
+    have : S.filter (fun a => ¬is_successful_choice a N) =
+        (Finset.range N).filter (fun a => Nat.gcd a N = 1 ∧ ¬is_successful_choice a N) := by
+      rw [hS_def, Finset.filter_filter]
+    rw [this]; exact general_unsuccessful_bound hp hq hpq hp2 hq2 hpN hqN
+  have h_partition := Finset.filter_card_add_filter_neg_card_eq_card
+    (fun a => is_successful_choice a N) (s := S)
+  -- successful_choices = S.filter(successful) (a=0 not coprime, a=1 not successful)
+  have h_succ_eq : successful_choices N = S.filter (fun a => is_successful_choice a N) := by
+    unfold successful_choices valid_choices
+    rw [Finset.filter_filter, hS_def, Finset.filter_filter]
+    apply Finset.filter_congr; intro a ha
+    rw [Finset.mem_range] at ha
+    constructor
+    · rintro ⟨⟨-, hg⟩, hs⟩; exact ⟨hg, hs⟩
+    · rintro ⟨hg, hs⟩
+      refine ⟨⟨?_, hg⟩, hs⟩
+      have ha0 : a ≠ 0 := by rintro rfl; simp at hg; omega
+      have ha1 : a ≠ 1 := fun h => by subst h; exact one_not_successful_choice _ hs
+      omega
+  rw [hvc, h_succ_eq]
+  omega
