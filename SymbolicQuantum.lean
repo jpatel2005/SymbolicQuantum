@@ -13,6 +13,6 @@ import «SymbolicQuantum».DJA.DJA
 -- Simon
 import «SymbolicQuantum».Simon.Simon
 -- Shor
-import «SymbolicQuantum».Shor.Shor
+import «SymbolicQuantum».Shor.Reduction
 -- Misc
 import «SymbolicQuantum».QuantumCircuitEquiv
