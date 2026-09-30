@@ -26,6 +26,16 @@ def isConstant (n : ℕ) (f : BitString n → Bool) :=
 def isBalanced (n : ℕ) (f : BitString n → Bool) : Prop :=
   Finset.sum Finset.univ (fun x => if f x then (-1 : ℂ) else 1) = 0
 
+-- isBalanced agrees with the combinatorial definition
+lemma isBalanced_iff (n : ℕ) (f : BitString n → Bool) :
+  isBalanced n f ↔
+  (Finset.univ.filter (fun x => f x = true)).card
+    = (Finset.univ.filter (fun x => f x = false)).card := by {
+  unfold isBalanced
+  rw [Finset.sum_ite, Finset.sum_const, Finset.sum_const]
+  simp [neg_add_eq_zero]
+}
+
 -- phase kickback state
 noncomputable def ket_f_kickback {n : ℕ} (f : BitString n → Bool) : QState (n + 1) :=
   fun bs =>
