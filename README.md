@@ -30,3 +30,7 @@ No tracked file contains `sorry` or `axiom`.
 lake exe cache get
 lake build
 ```
+
+## License
+
+Apache-2.0 — see [LICENSE](LICENSE).
