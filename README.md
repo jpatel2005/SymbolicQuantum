@@ -2,25 +2,25 @@
 
 Formal verification of quantum algorithms in Lean 4, built on Mathlib.
 
-Circuits are a deep embedding: `QGate`/`QCircuit` are inductive syntax, and `Qeval`
-interprets them as functions on `QState n := BitString n → ℂ`. Representing a state as an
-amplitude function rather than a vector makes gate application a pointwise rewrite of a
-bitstring, so proofs reduce to `funext` and case analysis instead of linear algebra.
+Circuits are a deep embedding: `QGate` and `QCircuit` are inductive syntax, and `Qeval`
+interprets them as functions on `QState n := BitString n → ℂ`. A state is a function on
+bitstrings, not a vector of coefficients, so applying a gate rewrites a bitstring pointwise
+and proofs come down to `funext` and case analysis.
 
 ## Contents
 
-- Core — gate semantics, circuit equivalence, global-phase equivalence, and the
-  `qseq`/`qchain`/`qsimp`/`qunfold` tactics.
-- `DJA/` — Deutsch, and Deutsch–Jozsa for the constant and balanced cases.
-- `Simon/` — Simon's algorithm: any measurable `y` satisfies `y · s = 0`.
-- `Shor/` — the classical reduction from factoring to order-finding, and the
-  success-probability bound.
+The core files hold the gate semantics, circuit equivalence, global-phase equivalence, and
+the `qseq`, `qchain`, `qsimp` and `qunfold` tactics.
+
+`DJA/` proves Deutsch, and Deutsch–Jozsa for the constant and balanced cases. `Simon/` proves
+that any `y` with nonzero measurement probability satisfies `y · s = 0`. `Shor/` has the
+classical reduction from factoring to order-finding and the success-probability bound.
 
 ## Scope
 
-Gates are defined by their action on amplitudes; unitarity and normalisation are not proved.
+Gates are defined by their action on amplitudes. Unitarity and normalisation are not proved.
 
-`Shor/` is classical only — there is no QFT and no quantum order-finding circuit.
+`Shor/` is classical only. There is no QFT and no quantum order-finding circuit.
 
 No tracked file contains `sorry` or `axiom`.
 
@@ -33,4 +33,4 @@ lake build
 
 ## License
 
-Apache-2.0 — see [LICENSE](LICENSE).
+Apache-2.0. See [LICENSE](LICENSE).
