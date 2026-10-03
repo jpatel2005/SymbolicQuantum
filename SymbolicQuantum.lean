@@ -16,5 +16,7 @@ import «SymbolicQuantum».Simon.Simon
 import «SymbolicQuantum».Shor.Reduction
 -- QFT
 import «SymbolicQuantum».QFT.Orthogonality
+import «SymbolicQuantum».QFT.Dirichlet
+import «SymbolicQuantum».QFT.Period
 -- Misc
 import «SymbolicQuantum».QuantumCircuitEquiv
