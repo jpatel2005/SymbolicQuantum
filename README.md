@@ -22,7 +22,8 @@ bound of `2M/π` on a geometric sum of `M` unit vectors whose phase is within `1
 integer, and the fact that the fibres of the oracle `x ↦ a^x mod N` are the residue classes
 mod the period. `shors_algorithm_end_to_end` puts the three stages together: the
 measurement probability, recovery of the period as a continued-fraction convergent, and the
-factor of `N` that follows.
+factor of `N` that follows. `shor_total_prob_ge` sums the probability over the `r` good
+measurements and all the fitting fibres.
 
 ## Scope
 
