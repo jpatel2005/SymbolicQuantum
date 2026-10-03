@@ -12,7 +12,8 @@ and proofs come down to `funext` and case analysis.
 The core files hold the gate semantics, circuit equivalence, global-phase equivalence, and
 the `qseq`, `qchain`, `qsimp` and `qunfold` tactics.
 
-`DJA/` proves Deutsch, and Deutsch–Jozsa for the constant and balanced cases. `Simon/` proves
+`DJA/` proves Deutsch, and Deutsch–Jozsa for the constant and balanced cases. In the
+balanced case the probability of reading the first `n` qubits as all zero is zero. `Simon/` proves
 that any `y` with nonzero measurement probability satisfies `y · s = 0`. `Shor/` has the
 classical reduction from factoring to order-finding and the success-probability bound.
 
@@ -32,7 +33,9 @@ neither are the oracles `Uf_DJA` and `Uf_Simon`.
 
 `shors_algorithm_end_to_end` is stated for a fibre whose offset satisfies `2 ^ n % r ≤ x₀`.
 That is what makes the progression fit inside `2 ^ n`, and `r - 2 ^ n % r` of the `r` offsets
-satisfy it, so one always exists.
+satisfy it, so one always exists. `exists_offset` and `exists_good_measurement` construct
+witnesses for the side conditions, and `shors_algorithm_concrete` computes the progression
+count, so the only hypotheses left to the caller are about `N`, `a` and the period.
 
 No tracked file contains `sorry` or `axiom`.
 

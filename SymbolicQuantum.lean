@@ -10,6 +10,7 @@ import «SymbolicQuantum».GlobalPhase
 -- Deutsch/DJA
 import «SymbolicQuantum».DJA.Deutsch
 import «SymbolicQuantum».DJA.DJA
+import «SymbolicQuantum».DJA.Balanced
 -- Simon
 import «SymbolicQuantum».Simon.Simon
 -- Shor

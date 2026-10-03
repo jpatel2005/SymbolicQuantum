@@ -121,3 +121,52 @@ theorem shors_algorithm_end_to_end
       (modExpFun a N n m hNpos hNm x₀bs) hrpos hx₀r hApos hfib hA hδ,
     hconv,
     shors_classical_reduction a r N hN ha hcop hr hsuccess⟩
+
+/-- The same statement with the progression count computed, so neither `A` nor
+    its characterisation has to be supplied by the caller. -/
+theorem shors_algorithm_concrete
+    {N a n m r x₀ k : ℕ}
+    (hN : N > 2) (ha : 1 < a ∧ a < N) (hcop : Nat.gcd a N = 1)
+    (hNpos : 0 < N) (hNm : N ≤ 2 ^ m)
+    (hr : is_period a r N) (hrpos : 0 < r)
+    (hsuccess : shor_success_conditions a r N)
+    (hx₀r : x₀ < r) (hx₀n : x₀ < 2 ^ n) (hx₀s : 2 ^ n % r ≤ x₀)
+    (c x₀bs : BitString n) (hx₀bs : x₀bs.toNat % r = x₀)
+    (hkr : Nat.Coprime k r) (hsmall : 2 * r ^ 2 ≤ 2 ^ n)
+    (happrox : |(c.toNat : ℝ) / 2 ^ n - (k : ℝ) / r| ≤ 1 / (2 * 2 ^ n)) :
+    (2 * (((2 ^ n - x₀ + r - 1) / r : ℕ) : ℝ) / (Real.pi * 2 ^ n)) ^ 2
+        ≤ prob_measure_y
+            (app_QFT_prefix (ket_simon n m (modExpFun a N n m hNpos hNm))) c
+      ∧ (∃ i, (GenContFract.of ((c.toNat : ℝ) / 2 ^ n)).convs i = (k : ℝ) / r)
+      ∧ (is_nontrivial_factor (Nat.gcd (a ^ (r / 2) - 1) N) N
+          ∨ is_nontrivial_factor (Nat.gcd (a ^ (r / 2) + 1) N) N) :=
+  shors_algorithm_end_to_end hN ha hcop hNpos hNm hr hrpos hsuccess hx₀r
+    (Nat.div_pos (by omega) hrpos) hx₀s c x₀bs hx₀bs
+    (progression_count hrpos hx₀n) hkr hsmall happrox
+
+/-
+  The side conditions are satisfiable, so the statements above are not vacuous.
+-/
+
+/-- An offset meeting all three conditions exists, together with a bitstring
+    carrying it. `x₀ = 2 ^ n % r` works. -/
+lemma exists_offset {n r : ℕ} (hrpos : 0 < r) (hrn : r ≤ 2 ^ n) :
+    ∃ (x₀ : ℕ) (x₀bs : BitString n),
+      x₀ < r ∧ x₀ < 2 ^ n ∧ 2 ^ n % r ≤ x₀ ∧ x₀bs.toNat % r = x₀ := by
+  have hlt : 2 ^ n % r < r := Nat.mod_lt _ hrpos
+  refine ⟨2 ^ n % r, bitStringEquivFin.symm ⟨2 ^ n % r, by omega⟩, hlt, by omega, le_rfl, ?_⟩
+  simp [BitString.toNat, Nat.mod_eq_of_lt hlt]
+
+/-- A measurement meeting the approximation bound exists: round `k · 2ⁿ / r`. -/
+lemma exists_good_measurement {n r k : ℕ} (hrpos : 0 < r) :
+    ∃ c : ℤ, |(c : ℝ) / 2 ^ n - (k : ℝ) / r| ≤ 1 / (2 * 2 ^ n) := by
+  have h2n : (0:ℝ) < 2 ^ n := by positivity
+  have hrR : (0:ℝ) < r := by exact_mod_cast hrpos
+  refine ⟨round ((k : ℝ) * 2 ^ n / r), ?_⟩
+  have hkey : (round ((k : ℝ) * 2 ^ n / r) : ℝ) / 2 ^ n - (k : ℝ) / r
+      = -(((k : ℝ) * 2 ^ n / r - round ((k : ℝ) * 2 ^ n / r)) / 2 ^ n) := by
+    field_simp
+    ring
+  rw [hkey, abs_neg, abs_div, abs_of_pos h2n, div_le_iff₀ h2n]
+  calc |(k : ℝ) * 2 ^ n / r - round ((k : ℝ) * 2 ^ n / r)| ≤ 1 / 2 := abs_sub_round _
+    _ = 1 / (2 * 2 ^ n) * 2 ^ n := by field_simp
