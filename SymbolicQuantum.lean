@@ -14,5 +14,7 @@ import «SymbolicQuantum».DJA.DJA
 import «SymbolicQuantum».Simon.Simon
 -- Shor
 import «SymbolicQuantum».Shor.Reduction
+-- QFT
+import «SymbolicQuantum».QFT.Orthogonality
 -- Misc
 import «SymbolicQuantum».QuantumCircuitEquiv
