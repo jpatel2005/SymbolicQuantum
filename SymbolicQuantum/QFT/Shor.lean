@@ -401,3 +401,28 @@ theorem shor_total_prob_ge
       = (G.card : ℝ) * (((r - 2 ^ n % r : ℕ) : ℝ)
           * (2 * (q:ℝ) / (Real.pi * 2 ^ n)) ^ 2) := by rw [hGcard]; ring
     _ ≤ _ := by simpa using Finset.card_nsmul_le_sum G _ _ hterm
+
+/-- **The 4/π² bound.** When the period divides `2 ^ n` every fibre fits and the
+    constant comes out exactly. Without that the fitting fibres number
+    `r - 2 ^ n % r`, which can be as low as `1`, and the bound degrades. -/
+theorem shor_total_prob_ge_pi
+    {N a n m r : ℕ} (hNpos : 0 < N) (hNm : N ≤ 2 ^ m)
+    (hr : is_period a r N) (hrpos : 0 < r) (hsmall : 2 * r ^ 2 ≤ 2 ^ n)
+    (hdvd : r ∣ 2 ^ n) :
+    4 / Real.pi ^ 2
+      ≤ ∑ c ∈ (Finset.range r).image (fun k => encBS n (goodC n r k)),
+          prob_measure_y
+            (app_QFT_prefix (ket_simon n m (modExpFun a N n m hNpos hNm))) c := by
+  have hpi := Real.pi_pos
+  have h2n : (0:ℝ) < 2 ^ n := by positivity
+  have h := shor_total_prob_ge hNpos hNm hr hrpos hsmall
+  have hmod : 2 ^ n % r = 0 := Nat.mod_eq_zero_of_dvd hdvd
+  have hrq : (r:ℝ) * (((2 ^ n / r : ℕ)) : ℝ) = 2 ^ n := by
+    have hc := Nat.div_mul_cancel hdvd
+    have : ((2 ^ n / r : ℕ) : ℝ) * (r:ℝ) = ((2:ℝ) ^ n) := by exact_mod_cast congrArg (Nat.cast : ℕ → ℝ) hc
+    linarith [this, mul_comm (r:ℝ) (((2 ^ n / r : ℕ)) : ℝ)]
+  rw [hmod, Nat.sub_zero] at h
+  refine le_trans (le_of_eq ?_) h
+  have hne : (Real.pi * 2 ^ n) ≠ 0 := by positivity
+  field_simp
+  nlinarith [hrq, sq_nonneg ((r:ℝ) * (((2 ^ n / r : ℕ)) : ℝ))]
