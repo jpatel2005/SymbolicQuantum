@@ -18,5 +18,6 @@ import «SymbolicQuantum».Shor.Reduction
 import «SymbolicQuantum».QFT.Orthogonality
 import «SymbolicQuantum».QFT.Dirichlet
 import «SymbolicQuantum».QFT.Period
+import «SymbolicQuantum».QFT.Amplitude
 -- Misc
 import «SymbolicQuantum».QuantumCircuitEquiv
