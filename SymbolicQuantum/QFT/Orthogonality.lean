@@ -25,34 +25,6 @@ noncomputable def omegaPow (N : ℕ) : ℂ := Complex.exp (2 * Real.pi * Complex
 lemma omegaPow_primitive {N : ℕ} (hN : N ≠ 0) : IsPrimitiveRoot (omegaPow N) N :=
   Complex.isPrimitiveRoot_exp N hN
 
-/- The orthogonality sum. -/
-
-theorem sum_omegaPow_mul {N : ℕ} (hN : N ≠ 0) (d : ℕ) :
-    ∑ x : Fin N, (omegaPow N) ^ (x.val * d) = if N ∣ d then (N : ℂ) else 0 := by
-  have hprim := omegaPow_primitive hN
-  have hrw : ∀ x : Fin N, (omegaPow N) ^ (x.val * d) = ((omegaPow N) ^ d) ^ x.val := by
-    intro x
-    rw [mul_comm, pow_mul]
-  simp only [hrw]
-  rw [Fin.sum_univ_eq_sum_range (fun i => ((omegaPow N) ^ d) ^ i) N]
-  by_cases hdvd : N ∣ d
-  · rw [if_pos hdvd, (hprim.pow_eq_one_iff_dvd d).mpr hdvd]
-    simp
-  · rw [if_neg hdvd]
-    have hne : (omegaPow N) ^ d ≠ 1 := fun h => hdvd ((hprim.pow_eq_one_iff_dvd d).mp h)
-    rw [geom_sum_eq hne]
-    have hN1 : ((omegaPow N) ^ d) ^ N = 1 := by
-      rw [← pow_mul, mul_comm, pow_mul, hprim.pow_eq_one, one_pow]
-    rw [hN1, sub_self, zero_div]
-
-/- The same sum in the framework's own idiom, over bitstrings. -/
-
-theorem sum_bitString_omegaPow_mul {n : ℕ} (d : ℕ) :
-    ∑ x : BitString n, (omegaPow (2 ^ n)) ^ (x.toNat * d)
-      = if 2 ^ n ∣ d then ((2 ^ n : ℕ) : ℂ) else 0 := by
-  rw [← sum_omegaPow_mul (N := 2 ^ n) (Nat.two_pow_pos n).ne' d]
-  exact Fintype.sum_equiv bitStringEquivFin _ _ (fun _ => rfl)
-
 /- Integer-exponent form, which is what a difference of two indices needs. -/
 
 theorem sum_omegaPow_zpow {N : ℕ} (hN : N ≠ 0) (d : ℤ) :
@@ -120,9 +92,8 @@ noncomputable def app_QFT_inv {n : ℕ} (ψ : QState n) : QState n :=
 lemma inv_sqrt_two_pow_sq (n : ℕ) :
     (1 / Real.sqrt (2 ^ n) : ℂ) * ((1 / Real.sqrt (2 ^ n) : ℂ) * ((2 ^ n : ℕ) : ℂ)) = 1 := by
   have h : (0:ℝ) < 2 ^ n := by positivity
-  have hs : (Real.sqrt ((2:ℝ) ^ n) : ℂ) ≠ 0 := by
-    simp only [ne_eq, Complex.ofReal_eq_zero]
-    exact (Real.sqrt_pos.mpr h).ne'
+  have hs : (Real.sqrt ((2:ℝ) ^ n) : ℂ) ≠ 0 :=
+    Complex.ofReal_ne_zero.mpr (Real.sqrt_pos.mpr h).ne'
   field_simp
   rw [← Complex.ofReal_pow, Real.sq_sqrt h.le]
   push_cast
@@ -159,9 +130,4 @@ theorem app_QFT_inv_app_QFT {n : ℕ} (ψ : QState n) : app_QFT_inv (app_QFT ψ)
     ring
   simp_rw [hpull]
   rw [← Finset.mul_sum, key]
-  calc (1 / Real.sqrt (2 ^ n) : ℂ) *
-        ((1 / Real.sqrt (2 ^ n) : ℂ) * (((2 ^ n : ℕ) : ℂ) * ψ b))
-      = ((1 / Real.sqrt (2 ^ n) : ℂ) *
-          ((1 / Real.sqrt (2 ^ n) : ℂ) * ((2 ^ n : ℕ) : ℂ))) * ψ b := by ring
-    _ = 1 * ψ b := by rw [inv_sqrt_two_pow_sq]
-    _ = ψ b := one_mul _
+  linear_combination ψ b * inv_sqrt_two_pow_sq n

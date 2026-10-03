@@ -51,15 +51,15 @@ theorem abs_geom_sum_ge {M : ℕ} (hM : 0 < M) {δ : ℝ} (hδ : |δ| ≤ 1 / (2
   have hpi := Real.pi_pos
   have hMR : (0:ℝ) < M := by exact_mod_cast hM
   have hM1 : (1:ℝ) ≤ M := by exact_mod_cast hM
-  have hterm : ∀ x ∈ Finset.range M,
+  have hterm : ∀ x : ℕ,
       Complex.exp ((2 * Real.pi * δ * x : ℝ) * Complex.I)
         = (Complex.exp ((2 * Real.pi * δ : ℝ) * Complex.I)) ^ x := by
-    intro x _
+    intro x
     rw [← Complex.exp_nat_mul]
     congr 1
     push_cast
     ring
-  rw [Finset.sum_congr rfl hterm]
+  rw [Finset.sum_congr rfl (fun x _ => hterm x)]
   set ω : ℂ := Complex.exp ((2 * Real.pi * δ : ℝ) * Complex.I) with hω
   -- |δ| * M ≤ 1/2, the form both branches need
   have hδM : |δ| * M ≤ 1 / 2 := by
@@ -87,19 +87,11 @@ theorem abs_geom_sum_ge {M : ℕ} (hM : 0 < M) {δ : ℝ} (hδ : |δ| ≤ 1 / (2
         · exact absurd h (by positivity)
         · linarith
       have hk0 : k ≠ 0 := by rintro rfl; rw [hreal] at hdabs; simp at hdabs
-      have hge : (1:ℝ) ≤ |(k:ℝ)| := by
-        have : (1:ℤ) ≤ |k| := Int.one_le_abs hk0
-        calc (1:ℝ) ≤ ((|k| : ℤ) : ℝ) := by exact_mod_cast this
-          _ = |(k:ℝ)| := by push_cast [Int.cast_abs]; rfl
+      have hge : (1:ℝ) ≤ |(k:ℝ)| := by exact_mod_cast Int.one_le_abs hk0
       rw [hreal] at hδhalf
       linarith
     rw [geom_sum_eq hne, norm_div]
-    have hωM : ω ^ M = Complex.exp ((2 * Real.pi * δ * M : ℝ) * Complex.I) := by
-      rw [hω, ← Complex.exp_nat_mul]
-      congr 1
-      push_cast
-      ring
-    rw [hωM, hω, norm_exp_mul_I_sub_one, norm_exp_mul_I_sub_one,
+    rw [(hterm M).symm, hω, norm_exp_mul_I_sub_one, norm_exp_mul_I_sub_one,
       show (2 * Real.pi * δ * M) / 2 = Real.pi * δ * M by ring,
       show (2 * Real.pi * δ) / 2 = Real.pi * δ by ring,
       mul_div_mul_left _ _ (two_ne_zero)]
