@@ -88,3 +88,35 @@ lemma progression_fits {n r x₀ A : ℕ} (hApos : 0 < A)
   have h2 : B < 2 ^ n / r := Nat.lt_of_mul_lt_mul_left h1
   calc r * (B + 1) ≤ r * (2 ^ n / r) := Nat.mul_le_mul_left r (by omega)
     _ ≤ 2 ^ n := Nat.mul_div_le _ _
+
+/-- Every fitting offset gives the same count, `2 ^ n / r`. That uniformity is
+    what lets separate fibres be bounded by a single expression. -/
+lemma progression_count_fitting {n r x₀ A : ℕ} (hrpos : 0 < r) (hx₀r : x₀ < r)
+    (hrn : r ≤ 2 ^ n) (hx₀s : 2 ^ n % r ≤ x₀)
+    (hA : ∀ j : ℕ, x₀ + j * r < 2 ^ n ↔ j < A) :
+    A = 2 ^ n / r := by
+  have hdm : r * (2 ^ n / r) + 2 ^ n % r = 2 ^ n := Nat.div_add_mod _ _
+  have hs : 2 ^ n % r < r := Nat.mod_lt _ hrpos
+  have hq : 1 ≤ 2 ^ n / r := (Nat.one_le_div_iff hrpos).mpr hrn
+  have hApos : 0 < A := by
+    rcases Nat.eq_zero_or_pos A with h | h
+    · exfalso
+      have h0 := hA 0
+      simp [h] at h0
+      omega
+    · exact h
+  have hle : A ≤ 2 ^ n / r := by
+    have hfit := progression_fits hApos hx₀s hA
+    have hlt : r * A < r * (2 ^ n / r + 1) := by nlinarith
+    have := Nat.lt_of_mul_lt_mul_left hlt
+    omega
+  have hge : 2 ^ n / r ≤ A := by
+    have hq1 : (2 ^ n / r - 1) * r + r = (2 ^ n / r) * r := by
+      have hsucc : 2 ^ n / r - 1 + 1 = 2 ^ n / r := by omega
+      calc (2 ^ n / r - 1) * r + r = (2 ^ n / r - 1 + 1) * r := by ring
+        _ = (2 ^ n / r) * r := by rw [hsucc]
+    have hcomm : (2 ^ n / r) * r = r * (2 ^ n / r) := Nat.mul_comm _ _
+    have hlast : x₀ + (2 ^ n / r - 1) * r < 2 ^ n := by omega
+    have := (hA (2 ^ n / r - 1)).mp hlast
+    omega
+  omega

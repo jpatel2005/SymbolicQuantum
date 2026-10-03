@@ -170,3 +170,47 @@ lemma exists_good_measurement {n r k : ℕ} (hrpos : 0 < r) :
   rw [hkey, abs_neg, abs_div, abs_of_pos h2n, div_le_iff₀ h2n]
   calc |(k : ℝ) * 2 ^ n / r - round ((k : ℝ) * 2 ^ n / r)| ≤ 1 / 2 := abs_sub_round _
     _ = 1 / (2 * 2 ^ n) * 2 ^ n := by field_simp
+
+/-- The good measurement fits in `n` bits. The smallness condition `2 r² ≤ 2ⁿ`
+    rules out the rounding overflowing to `2ⁿ`. -/
+lemma exists_good_measurement_bitString {n r k : ℕ} (hrpos : 0 < r) (hkr : k < r)
+    (hsmall : 2 * r ^ 2 ≤ 2 ^ n) :
+    ∃ c : BitString n, |(c.toNat : ℝ) / 2 ^ n - (k : ℝ) / r| ≤ 1 / (2 * 2 ^ n) := by
+  have h2n : (0:ℝ) < 2 ^ n := by positivity
+  have hrR : (0:ℝ) < r := by exact_mod_cast hrpos
+  have h2r : 2 * r ≤ 2 ^ n := by nlinarith
+  have h2rR : 2 * (r:ℝ) ≤ 2 ^ n := by exact_mod_cast h2r
+  have hkR : (k:ℝ) ≤ r - 1 := by
+    have : (k:ℝ) + 1 ≤ r := by exact_mod_cast hkr
+    linarith
+  set t : ℝ := (k : ℝ) * 2 ^ n / r with ht
+  have hround := abs_sub_round t
+  have habs := abs_le.mp hround
+  have ht0 : 0 ≤ t := by positivity
+  -- t ≤ 2 ^ n - 2, so the rounding stays below 2 ^ n
+  have htle : t ≤ 2 ^ n - 2 := by
+    rw [ht, div_le_iff₀ hrR]
+    nlinarith
+  have hc0 : 0 ≤ round t := by
+    by_contra hneg
+    push_neg at hneg
+    have : (round t : ℝ) ≤ -1 := by exact_mod_cast Int.le_sub_one_of_lt hneg
+    linarith [habs.1, habs.2]
+  have hclt : round t < ((2 ^ n : ℕ) : ℤ) := by
+    have hlt : (round t : ℝ) < ((2 ^ n : ℕ) : ℝ) := by push_cast; linarith [habs.1]
+    exact_mod_cast hlt
+  have htn : ((round t).toNat : ℤ) = round t := Int.toNat_of_nonneg hc0
+  have hbound : (round t).toNat < 2 ^ n := by omega
+  refine ⟨bitStringEquivFin.symm ⟨(round t).toNat, hbound⟩, ?_⟩
+  have htoNat : ((bitStringEquivFin.symm ⟨(round t).toNat, hbound⟩ : BitString n).toNat : ℝ)
+      = (round t : ℝ) := by
+    simp only [BitString.toNat, Equiv.apply_symm_apply]
+    exact_mod_cast htn
+  rw [htoNat]
+  have hkey : (round t : ℝ) / 2 ^ n - (k : ℝ) / r = -((t - round t) / 2 ^ n) := by
+    simp only [ht]
+    field_simp
+    ring
+  rw [hkey, abs_neg, abs_div, abs_of_pos h2n, div_le_iff₀ h2n]
+  calc |t - round t| ≤ 1 / 2 := hround
+    _ = 1 / (2 * 2 ^ n) * 2 ^ n := by field_simp
