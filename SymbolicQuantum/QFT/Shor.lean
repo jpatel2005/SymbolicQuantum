@@ -68,14 +68,17 @@ theorem shors_algorithm {N a r c M k : ℕ}
 /-- **Shor's algorithm, end to end.** From a measurement `c` of the first
     register satisfying the standard approximation bound: the outcome is likely,
     the period is recoverable by continued fractions, and the period yields a
-    non-trivial factor of `N`. -/
+    non-trivial factor of `N`.
+
+    `2 ^ n % r ≤ x₀` picks a fibre whose progression fits inside `2 ^ n`. There
+    are `r - 2 ^ n % r` such offsets, so one always exists. -/
 theorem shors_algorithm_end_to_end
     {N a n m r x₀ A k : ℕ}
     (hN : N > 2) (ha : 1 < a ∧ a < N) (hcop : Nat.gcd a N = 1)
     (hNpos : 0 < N) (hNm : N ≤ 2 ^ m)
     (hr : is_period a r N) (hrpos : 0 < r)
     (hsuccess : shor_success_conditions a r N)
-    (hx₀r : x₀ < r) (hApos : 0 < A) (hAr : r * A ≤ 2 ^ n)
+    (hx₀r : x₀ < r) (hApos : 0 < A) (hx₀s : 2 ^ n % r ≤ x₀)
     (c x₀bs : BitString n) (hx₀bs : x₀bs.toNat % r = x₀)
     (hA : ∀ j : ℕ, x₀ + j * r < 2 ^ n ↔ j < A)
     (hkr : Nat.Coprime k r) (hsmall : 2 * r ^ 2 ≤ 2 ^ n)
@@ -89,6 +92,7 @@ theorem shors_algorithm_end_to_end
   have hrR : (0:ℝ) < r := by exact_mod_cast hrpos
   have hAR : (0:ℝ) < A := by exact_mod_cast hApos
   have h2n : (0:ℝ) < 2 ^ n := by positivity
+  have hAr : r * A ≤ 2 ^ n := progression_fits hApos hx₀s hA
   have hArR : (r:ℝ) * A ≤ 2 ^ n := by exact_mod_cast hAr
   -- the quantum-side phase bound follows from the classical approximation
   have hδ : |((c.toNat * r : ℕ) : ℝ) / (2 ^ n) - ((k : ℤ) : ℝ)| ≤ 1 / (2 * A) := by

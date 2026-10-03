@@ -30,8 +30,9 @@ Gates are defined by their action on amplitudes. Unitarity and normalisation are
 The QFT is specified by its action on amplitudes. It is not assembled from gates, and
 neither are the oracles `Uf_DJA` and `Uf_Simon`.
 
-`shors_algorithm_end_to_end` assumes `r * A ≤ 2 ^ n`, which holds when the period divides
-`2 ^ n`. The general case needs a sharper count of the progression.
+`shors_algorithm_end_to_end` is stated for a fibre whose offset satisfies `2 ^ n % r ≤ x₀`.
+That is what makes the progression fit inside `2 ^ n`, and `r - 2 ^ n % r` of the `r` offsets
+satisfy it, so one always exists.
 
 No tracked file contains `sorry` or `axiom`.
 

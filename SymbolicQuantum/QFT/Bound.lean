@@ -73,3 +73,18 @@ theorem shor_amplitude_norm_ge {n m : ℕ} (f : BitString n → BitString m)
           Complex.exp ((2 * Real.pi * (((c.toNat * r : ℕ) : ℝ) / (2 ^ n) - (k : ℝ)) * x : ℝ)
             * Complex.I)‖ := by
         exact mul_le_mul_of_nonneg_left hgeom (by positivity)
+
+/-- The progression fits inside `2 ^ n` when the offset is at least `2 ^ n % r`.
+    For smaller offsets it does not: `2 ^ n = 8`, `r = 3`, `x₀ = 0` gives `A = 3`
+    and `r * A = 9`. -/
+lemma progression_fits {n r x₀ A : ℕ} (hApos : 0 < A)
+    (hx₀s : 2 ^ n % r ≤ x₀)
+    (hA : ∀ j : ℕ, x₀ + j * r < 2 ^ n ↔ j < A) :
+    r * A ≤ 2 ^ n := by
+  obtain ⟨B, rfl⟩ : ∃ B, A = B + 1 := ⟨A - 1, by omega⟩
+  have hlast : x₀ + B * r < 2 ^ n := (hA B).mpr (by omega)
+  have hdm : r * (2 ^ n / r) + 2 ^ n % r = 2 ^ n := Nat.div_add_mod _ _
+  have h1 : r * B < r * (2 ^ n / r) := by nlinarith [mul_comm r B]
+  have h2 : B < 2 ^ n / r := Nat.lt_of_mul_lt_mul_left h1
+  calc r * (B + 1) ≤ r * (2 ^ n / r) := Nat.mul_le_mul_left r (by omega)
+    _ ≤ 2 ^ n := Nat.mul_div_le _ _
