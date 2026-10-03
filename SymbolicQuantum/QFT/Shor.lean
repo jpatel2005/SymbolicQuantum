@@ -30,13 +30,13 @@ theorem shor_modExp_amplitude_norm_ge
     register is at least the square of the single-fibre amplitude bound. -/
 theorem shor_prob_measure_ge {n m : ℕ} (f : BitString n → BitString m)
     (c : BitString n) (z : BitString m) {r x₀ A : ℕ} {k : ℤ}
-    (hr : 0 < r) (hx₀r : x₀ < r) (hApos : 0 < A)
+    (hrpos : 0 < r) (hx₀r : x₀ < r) (hApos : 0 < A)
     (hfib : ∀ x : BitString n, f x = z ↔ x.toNat % r = x₀)
     (hA : ∀ j : ℕ, x₀ + j * r < 2 ^ n ↔ j < A)
     (hδ : |((c.toNat * r : ℕ) : ℝ) / (2 ^ n) - (k : ℝ)| ≤ 1 / (2 * A)) :
     (2 * A / (Real.pi * 2 ^ n)) ^ 2
       ≤ prob_measure_y (app_QFT_prefix (ket_simon n m f)) c := by
-  have hamp := shor_amplitude_norm_ge f c z hr hx₀r hApos hfib hA hδ
+  have hamp := shor_amplitude_norm_ge f c z hrpos hx₀r hApos hfib hA hδ
   have hnn : (0:ℝ) ≤ 2 * A / (Real.pi * 2 ^ n) := by positivity
   have hsingle : Complex.normSq (app_QFT_prefix (ket_simon n m f) (combine c z))
       ≤ prob_measure_y (app_QFT_prefix (ket_simon n m f)) c := by

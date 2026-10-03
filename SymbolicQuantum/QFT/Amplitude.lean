@@ -65,7 +65,7 @@ theorem app_QFT_prefix_ket_simon {n m : ℕ} (f : BitString n → BitString m)
   over it is geometric. This is what makes the Dirichlet bound applicable.
 -/
 
-theorem sum_residue_class_reindex {M r c : ℕ} (hr : 0 < r) (hc : c < r) (g : ℕ → ℂ) :
+theorem sum_residue_class_reindex {M r c : ℕ} (hrpos : 0 < r) (hc : c < r) (g : ℕ → ℂ) :
     ∑ k ∈ (Finset.range M).filter (fun k => k % r = c), g k
       = ∑ j ∈ (Finset.range M).filter (fun j => c + j * r < M), g (c + j * r) := by
   have himg : (Finset.range M).filter (fun k => k % r = c)
@@ -84,12 +84,12 @@ theorem sum_residue_class_reindex {M r c : ℕ} (hr : 0 < r) (hc : c < r) (g : �
   rw [himg, Finset.sum_image]
   intro a _ b _ hab
   have hmul : a * r = b * r := by linarith
-  exact Nat.eq_of_mul_eq_mul_right hr hmul
+  exact Nat.eq_of_mul_eq_mul_right hrpos hmul
 
-theorem sum_residue_class_geom {M r c : ℕ} (hr : 0 < r) (hc : c < r) (θ : ℂ) :
+theorem sum_residue_class_geom {M r c : ℕ} (hrpos : 0 < r) (hc : c < r) (θ : ℂ) :
     ∑ k ∈ (Finset.range M).filter (fun k => k % r = c), θ ^ k
       = θ ^ c * ∑ j ∈ (Finset.range M).filter (fun j => c + j * r < M), (θ ^ r) ^ j := by
-  rw [sum_residue_class_reindex hr hc (fun k => θ ^ k), Finset.mul_sum]
+  rw [sum_residue_class_reindex hrpos hc (fun k => θ ^ k), Finset.mul_sum]
   exact Finset.sum_congr rfl fun j _ => by rw [pow_add, pow_mul']
 
 /- Transferring a sum over bitstrings to a sum over their numeric values. -/
@@ -122,7 +122,7 @@ lemma omegaPow_zpow_mul {N : ℕ} (a b : ℕ) :
     the residue class of `x₀` mod the period `r`, the QFT amplitude at `c` is a
     phase times a geometric series in `ω ^ (r * c)`. -/
 theorem shor_amplitude_geom {n m : ℕ} (f : BitString n → BitString m)
-    (c : BitString n) (z : BitString m) {r x₀ : ℕ} (hr : 0 < r) (hx₀ : x₀ < r)
+    (c : BitString n) (z : BitString m) {r x₀ : ℕ} (hrpos : 0 < r) (hx₀ : x₀ < r)
     (hfib : ∀ x : BitString n, f x = z ↔ x.toNat % r = x₀) :
     app_QFT_prefix (ket_simon n m f) (combine c z)
       = (1 / (2 ^ n : ℂ)) * ((omegaPow (2 ^ n)) ^ c.toNat) ^ x₀ *
@@ -135,7 +135,7 @@ theorem shor_amplitude_geom {n m : ℕ} (f : BitString n → BitString m)
   simp only [hpow]
   rw [sum_bitString_filter_toNat (fun x => f x = z) (fun k => k % r = x₀) hfib
         (fun k => ((omegaPow (2 ^ n)) ^ c.toNat) ^ k),
-      sum_residue_class_geom hr hx₀]
+      sum_residue_class_geom hrpos hx₀]
   ring
 
 /-- The geometric ratio in exponential form. Shifting by any integer `k` is free,
