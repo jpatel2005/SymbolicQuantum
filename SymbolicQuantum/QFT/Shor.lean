@@ -30,13 +30,13 @@ theorem shor_modExp_amplitude_norm_ge
     register is at least the square of the single-fibre amplitude bound. -/
 theorem shor_prob_measure_ge {n m : ℕ} (f : BitString n → BitString m)
     (c : BitString n) (z : BitString m) {r x₀ A : ℕ} {k : ℤ}
-    (hr : 0 < r) (hx₀r : x₀ < r) (hApos : 0 < A)
+    (hrpos : 0 < r) (hx₀r : x₀ < r) (hApos : 0 < A)
     (hfib : ∀ x : BitString n, f x = z ↔ x.toNat % r = x₀)
     (hA : ∀ j : ℕ, x₀ + j * r < 2 ^ n ↔ j < A)
     (hδ : |((c.toNat * r : ℕ) : ℝ) / (2 ^ n) - (k : ℝ)| ≤ 1 / (2 * A)) :
     (2 * A / (Real.pi * 2 ^ n)) ^ 2
       ≤ prob_measure_y (app_QFT_prefix (ket_simon n m f)) c := by
-  have hamp := shor_amplitude_norm_ge f c z hr hx₀r hApos hfib hA hδ
+  have hamp := shor_amplitude_norm_ge f c z hrpos hx₀r hApos hfib hA hδ
   have hnn : (0:ℝ) ≤ 2 * A / (Real.pi * 2 ^ n) := by positivity
   have hsingle : Complex.normSq (app_QFT_prefix (ket_simon n m f) (combine c z))
       ≤ prob_measure_y (app_QFT_prefix (ket_simon n m f)) c := by
@@ -68,14 +68,17 @@ theorem shors_algorithm {N a r c M k : ℕ}
 /-- **Shor's algorithm, end to end.** From a measurement `c` of the first
     register satisfying the standard approximation bound: the outcome is likely,
     the period is recoverable by continued fractions, and the period yields a
-    non-trivial factor of `N`. -/
+    non-trivial factor of `N`.
+
+    `2 ^ n % r ≤ x₀` picks a fibre whose progression fits inside `2 ^ n`. There
+    are `r - 2 ^ n % r` such offsets, so one always exists. -/
 theorem shors_algorithm_end_to_end
     {N a n m r x₀ A k : ℕ}
     (hN : N > 2) (ha : 1 < a ∧ a < N) (hcop : Nat.gcd a N = 1)
     (hNpos : 0 < N) (hNm : N ≤ 2 ^ m)
     (hr : is_period a r N) (hrpos : 0 < r)
     (hsuccess : shor_success_conditions a r N)
-    (hx₀r : x₀ < r) (hApos : 0 < A) (hAr : r * A ≤ 2 ^ n)
+    (hx₀r : x₀ < r) (hApos : 0 < A) (hx₀s : 2 ^ n % r ≤ x₀)
     (c x₀bs : BitString n) (hx₀bs : x₀bs.toNat % r = x₀)
     (hA : ∀ j : ℕ, x₀ + j * r < 2 ^ n ↔ j < A)
     (hkr : Nat.Coprime k r) (hsmall : 2 * r ^ 2 ≤ 2 ^ n)
@@ -89,6 +92,7 @@ theorem shors_algorithm_end_to_end
   have hrR : (0:ℝ) < r := by exact_mod_cast hrpos
   have hAR : (0:ℝ) < A := by exact_mod_cast hApos
   have h2n : (0:ℝ) < 2 ^ n := by positivity
+  have hAr : r * A ≤ 2 ^ n := progression_fits hApos hx₀s hA
   have hArR : (r:ℝ) * A ≤ 2 ^ n := by exact_mod_cast hAr
   -- the quantum-side phase bound follows from the classical approximation
   have hδ : |((c.toNat * r : ℕ) : ℝ) / (2 ^ n) - ((k : ℤ) : ℝ)| ≤ 1 / (2 * A) := by
@@ -117,3 +121,308 @@ theorem shors_algorithm_end_to_end
       (modExpFun a N n m hNpos hNm x₀bs) hrpos hx₀r hApos hfib hA hδ,
     hconv,
     shors_classical_reduction a r N hN ha hcop hr hsuccess⟩
+
+/-- The same statement with the progression count computed, so neither `A` nor
+    its characterisation has to be supplied by the caller. -/
+theorem shors_algorithm_concrete
+    {N a n m r x₀ k : ℕ}
+    (hN : N > 2) (ha : 1 < a ∧ a < N) (hcop : Nat.gcd a N = 1)
+    (hNpos : 0 < N) (hNm : N ≤ 2 ^ m)
+    (hr : is_period a r N) (hrpos : 0 < r)
+    (hsuccess : shor_success_conditions a r N)
+    (hx₀r : x₀ < r) (hx₀n : x₀ < 2 ^ n) (hx₀s : 2 ^ n % r ≤ x₀)
+    (c x₀bs : BitString n) (hx₀bs : x₀bs.toNat % r = x₀)
+    (hkr : Nat.Coprime k r) (hsmall : 2 * r ^ 2 ≤ 2 ^ n)
+    (happrox : |(c.toNat : ℝ) / 2 ^ n - (k : ℝ) / r| ≤ 1 / (2 * 2 ^ n)) :
+    (2 * (((2 ^ n - x₀ + r - 1) / r : ℕ) : ℝ) / (Real.pi * 2 ^ n)) ^ 2
+        ≤ prob_measure_y
+            (app_QFT_prefix (ket_simon n m (modExpFun a N n m hNpos hNm))) c
+      ∧ (∃ i, (GenContFract.of ((c.toNat : ℝ) / 2 ^ n)).convs i = (k : ℝ) / r)
+      ∧ (is_nontrivial_factor (Nat.gcd (a ^ (r / 2) - 1) N) N
+          ∨ is_nontrivial_factor (Nat.gcd (a ^ (r / 2) + 1) N) N) :=
+  shors_algorithm_end_to_end hN ha hcop hNpos hNm hr hrpos hsuccess hx₀r
+    (Nat.div_pos (by omega) hrpos) hx₀s c x₀bs hx₀bs
+    (progression_count hrpos hx₀n) hkr hsmall happrox
+
+/-
+  The side conditions are satisfiable, so the statements above are not vacuous.
+-/
+
+/-- An offset meeting all three conditions exists, together with a bitstring
+    carrying it. `x₀ = 2 ^ n % r` works. -/
+lemma exists_offset {n r : ℕ} (hrpos : 0 < r) (hrn : r ≤ 2 ^ n) :
+    ∃ (x₀ : ℕ) (x₀bs : BitString n),
+      x₀ < r ∧ x₀ < 2 ^ n ∧ 2 ^ n % r ≤ x₀ ∧ x₀bs.toNat % r = x₀ := by
+  have hlt : 2 ^ n % r < r := Nat.mod_lt _ hrpos
+  refine ⟨2 ^ n % r, bitStringEquivFin.symm ⟨2 ^ n % r, by omega⟩, hlt, by omega, le_rfl, ?_⟩
+  simp [BitString.toNat, Nat.mod_eq_of_lt hlt]
+
+/-- A measurement meeting the approximation bound exists: round `k · 2ⁿ / r`. -/
+lemma exists_good_measurement {n r k : ℕ} (hrpos : 0 < r) :
+    ∃ c : ℤ, |(c : ℝ) / 2 ^ n - (k : ℝ) / r| ≤ 1 / (2 * 2 ^ n) := by
+  have h2n : (0:ℝ) < 2 ^ n := by positivity
+  have hrR : (0:ℝ) < r := by exact_mod_cast hrpos
+  refine ⟨round ((k : ℝ) * 2 ^ n / r), ?_⟩
+  have hkey : (round ((k : ℝ) * 2 ^ n / r) : ℝ) / 2 ^ n - (k : ℝ) / r
+      = -(((k : ℝ) * 2 ^ n / r - round ((k : ℝ) * 2 ^ n / r)) / 2 ^ n) := by
+    field_simp
+    ring
+  rw [hkey, abs_neg, abs_div, abs_of_pos h2n, div_le_iff₀ h2n]
+  calc |(k : ℝ) * 2 ^ n / r - round ((k : ℝ) * 2 ^ n / r)| ≤ 1 / 2 := abs_sub_round _
+    _ = 1 / (2 * 2 ^ n) * 2 ^ n := by field_simp
+
+/- Summing over fibres: the measurement probability uses all of them, not one. -/
+
+/-- The bitstring carrying a given value, when it fits. Total, so it can be used
+    inside a `Finset.image`. -/
+def encBS (n v : ℕ) : BitString n :=
+  if h : v < 2 ^ n then bitStringEquivFin.symm ⟨v, h⟩ else fun _ => Qubit.zero
+
+@[simp] lemma encBS_toNat {n v : ℕ} (h : v < 2 ^ n) : (encBS n v).toNat = v := by
+  simp [encBS, h, BitString.toNat]
+
+/-- Distinct offsets below the period give distinct oracle values. -/
+lemma modExpFun_inj_on_offsets {N a n m r : ℕ} (hNpos : 0 < N) (hNm : N ≤ 2 ^ m)
+    (hr : is_period a r N) (hrpos : 0 < r) (hrn : r ≤ 2 ^ n)
+    {u v : ℕ} (hu : u < r) (hv : v < r)
+    (h : modExpFun a N n m hNpos hNm (encBS n u)
+       = modExpFun a N n m hNpos hNm (encBS n v)) : u = v := by
+  rw [modExpFun_eq_iff_modEq hNpos hNm hr hrpos, encBS_toNat (by omega),
+    encBS_toNat (by omega)] at h
+  simpa [Nat.mod_eq_of_lt hu, Nat.mod_eq_of_lt hv] using h
+
+/-- The per-fibre bound, as a squared magnitude. -/
+lemma shor_normSq_ge {n m : ℕ} (f : BitString n → BitString m)
+    (c : BitString n) (z : BitString m) {r x₀ A : ℕ} {k : ℤ}
+    (hrpos : 0 < r) (hx₀r : x₀ < r) (hApos : 0 < A)
+    (hfib : ∀ x : BitString n, f x = z ↔ x.toNat % r = x₀)
+    (hA : ∀ j : ℕ, x₀ + j * r < 2 ^ n ↔ j < A)
+    (hδ : |((c.toNat * r : ℕ) : ℝ) / (2 ^ n) - (k : ℝ)| ≤ 1 / (2 * A)) :
+    (2 * A / (Real.pi * 2 ^ n)) ^ 2
+      ≤ Complex.normSq (app_QFT_prefix (ket_simon n m f) (combine c z)) := by
+  have hamp := shor_amplitude_norm_ge f c z hrpos hx₀r hApos hfib hA hδ
+  have hnn : (0:ℝ) ≤ 2 * A / (Real.pi * 2 ^ n) := by positivity
+  calc (2 * A / (Real.pi * 2 ^ n)) ^ 2
+      ≤ ‖app_QFT_prefix (ket_simon n m f) (combine c z)‖ ^ 2 := pow_le_pow_left₀ hnn hamp 2
+    _ = _ := (Complex.normSq_eq_norm_sq _).symm
+
+/-- **Measurement probability over all fibres.** Each of the `r - 2 ^ n % r`
+    fitting offsets contributes its own term to the sum over the second
+    register, so the single-fibre bound improves by that factor. -/
+theorem shor_prob_measure_ge_multi
+    {N a n m r : ℕ} {k : ℤ} (hNpos : 0 < N) (hNm : N ≤ 2 ^ m)
+    (hr : is_period a r N) (hrpos : 0 < r) (hrn : r ≤ 2 ^ n)
+    (c : BitString n)
+    (hδ : |((c.toNat * r : ℕ) : ℝ) / (2 ^ n) - (k : ℝ)|
+            ≤ 1 / (2 * ((2 ^ n / r : ℕ) : ℝ))) :
+    ((r - 2 ^ n % r : ℕ) : ℝ) * (2 * ((2 ^ n / r : ℕ) : ℝ) / (Real.pi * 2 ^ n)) ^ 2
+      ≤ prob_measure_y (app_QFT_prefix (ket_simon n m (modExpFun a N n m hNpos hNm))) c := by
+  set F := modExpFun a N n m hNpos hNm with hF
+  set q := 2 ^ n / r with hq
+  have hqpos : 0 < q := (Nat.one_le_div_iff hrpos).mpr hrn
+  set S : Finset ℕ := Finset.Ico (2 ^ n % r) r with hS
+  have hinj : Set.InjOn (fun v => F (encBS n v)) (↑S : Set ℕ) := by
+    intro u hu v hv h
+    rw [hS, Finset.mem_coe, Finset.mem_Ico] at hu hv
+    exact modExpFun_inj_on_offsets hNpos hNm hr hrpos hrn hu.2 hv.2 h
+  set T : Finset (BitString m) := S.image (fun v => F (encBS n v)) with hT
+  have hTcard : T.card = r - 2 ^ n % r := by
+    rw [hT, Finset.card_image_of_injOn hinj, hS, Nat.card_Ico]
+  have hterm : ∀ z ∈ T, (2 * (q : ℝ) / (Real.pi * 2 ^ n)) ^ 2
+      ≤ Complex.normSq (app_QFT_prefix (ket_simon n m F) (combine c z)) := by
+    intro z hz
+    rw [hT, Finset.mem_image] at hz
+    obtain ⟨v, hvS, rfl⟩ := hz
+    rw [hS, Finset.mem_Ico] at hvS
+    have hvn : v < 2 ^ n := by omega
+    have hfib : ∀ x : BitString n, F x = F (encBS n v) ↔ x.toNat % r = v := by
+      intro x
+      rw [hF, modExpFun_fibre hNpos hNm hr hrpos (encBS n v) x, encBS_toNat hvn,
+        Nat.mod_eq_of_lt hvS.2]
+    have hA : ∀ j : ℕ, v + j * r < 2 ^ n ↔ j < q := by
+      intro j
+      rw [hq]
+      exact progression_count hrpos hvn j |>.trans
+        (by rw [progression_count_fitting hrpos hvS.2 hrn hvS.1 (progression_count hrpos hvn)])
+    exact shor_normSq_ge F c _ hrpos hvS.2 hqpos hfib hA hδ
+  calc ((r - 2 ^ n % r : ℕ) : ℝ) * (2 * (q : ℝ) / (Real.pi * 2 ^ n)) ^ 2
+      = (T.card : ℝ) * (2 * (q : ℝ) / (Real.pi * 2 ^ n)) ^ 2 := by rw [hTcard]
+    _ ≤ ∑ z ∈ T, Complex.normSq (app_QFT_prefix (ket_simon n m F) (combine c z)) := by
+        simpa using Finset.card_nsmul_le_sum T _ _ hterm
+    _ ≤ prob_measure_y (app_QFT_prefix (ket_simon n m F)) c :=
+        Finset.sum_le_sum_of_subset_of_nonneg (Finset.subset_univ T)
+          (fun z _ _ => Complex.normSq_nonneg _)
+
+
+/- The good measurements: one per residue `k`, and all distinct. -/
+
+/-- The measurement nearest to `k / r`. -/
+noncomputable def goodC (n r k : ℕ) : ℕ := (round ((k : ℝ) * 2 ^ n / r)).toNat
+
+/-- `goodC` fits in `n` bits, agrees with the rounding, and meets the
+    approximation bound. The smallness condition `2 r² ≤ 2ⁿ` is what stops the
+    rounding overflowing to `2ⁿ`. -/
+lemma goodC_spec {n r k : ℕ} (hrpos : 0 < r) (hkr : k < r) (hsmall : 2 * r ^ 2 ≤ 2 ^ n) :
+    goodC n r k < 2 ^ n
+      ∧ ((goodC n r k : ℕ) : ℝ) = (round ((k : ℝ) * 2 ^ n / r) : ℝ)
+      ∧ |((goodC n r k : ℕ) : ℝ) / 2 ^ n - (k : ℝ) / r| ≤ 1 / (2 * 2 ^ n) := by
+  have h2n : (0:ℝ) < 2 ^ n := by positivity
+  have hrR : (0:ℝ) < r := by exact_mod_cast hrpos
+  have h2r : 2 * r ≤ 2 ^ n := by nlinarith
+  have h2rR : 2 * (r:ℝ) ≤ 2 ^ n := by exact_mod_cast h2r
+  have hkR : (k:ℝ) ≤ r - 1 := by
+    have : (k:ℝ) + 1 ≤ r := by exact_mod_cast hkr
+    linarith
+  set t : ℝ := (k : ℝ) * 2 ^ n / r with ht
+  have hround := abs_sub_round t
+  have habs := abs_le.mp hround
+  have ht0 : 0 ≤ t := by positivity
+  have htle : t ≤ 2 ^ n - 2 := by
+    rw [ht, div_le_iff₀ hrR]; nlinarith
+  have hc0 : 0 ≤ round t := by
+    by_contra hneg
+    push_neg at hneg
+    have : (round t : ℝ) ≤ -1 := by exact_mod_cast Int.le_sub_one_of_lt hneg
+    linarith [habs.1, habs.2]
+  have htn : ((round t).toNat : ℤ) = round t := Int.toNat_of_nonneg hc0
+  have hclt : round t < ((2 ^ n : ℕ) : ℤ) := by
+    have hlt : (round t : ℝ) < ((2 ^ n : ℕ) : ℝ) := by push_cast; linarith [habs.1]
+    exact_mod_cast hlt
+  have hdef : goodC n r k = (round t).toNat := rfl
+  have hfit : goodC n r k < 2 ^ n := by omega
+  have hval : ((goodC n r k : ℕ) : ℝ) = (round t : ℝ) := by
+    rw [hdef]; exact_mod_cast htn
+  refine ⟨hfit, hval, ?_⟩
+  rw [hval]
+  have hkey : (round t : ℝ) / 2 ^ n - (k : ℝ) / r = -((t - round t) / 2 ^ n) := by
+    simp only [ht]; field_simp; ring
+  rw [hkey, abs_neg, abs_div, abs_of_pos h2n, div_le_iff₀ h2n]
+  calc |t - round t| ≤ 1 / 2 := hround
+    _ = 1 / (2 * 2 ^ n) * 2 ^ n := by field_simp
+
+lemma exists_good_measurement_bitString {n r k : ℕ} (hrpos : 0 < r) (hkr : k < r)
+    (hsmall : 2 * r ^ 2 ≤ 2 ^ n) :
+    ∃ c : BitString n, |(c.toNat : ℝ) / 2 ^ n - (k : ℝ) / r| ≤ 1 / (2 * 2 ^ n) := by
+  obtain ⟨hfit, -, hbound⟩ := goodC_spec hrpos hkr hsmall
+  exact ⟨encBS n (goodC n r k), by rw [encBS_toNat hfit]; exact hbound⟩
+
+/-- Distinct residues give distinct measurements: the targets `k · 2ⁿ / r` are at
+    least `2` apart and each rounding moves by at most `1/2`. -/
+lemma goodC_inj {n r : ℕ} (hrpos : 0 < r) (hsmall : 2 * r ^ 2 ≤ 2 ^ n)
+    {u v : ℕ} (hu : u < r) (hv : v < r) (h : goodC n r u = goodC n r v) : u = v := by
+  have h2n : (0:ℝ) < 2 ^ n := by positivity
+  have hrR : (0:ℝ) < r := by exact_mod_cast hrpos
+  have h2r : 2 * r ≤ 2 ^ n := by nlinarith
+  have h2rR : 2 * (r:ℝ) ≤ 2 ^ n := by exact_mod_cast h2r
+  obtain ⟨-, hvalu, -⟩ := goodC_spec hrpos hu hsmall
+  obtain ⟨-, hvalv, -⟩ := goodC_spec hrpos hv hsmall
+  by_contra hne
+  have hdiff : (1:ℝ) ≤ |(u:ℝ) - (v:ℝ)| := by
+    rcases Nat.lt_or_ge u v with hlt | hge
+    · have h1 : (u:ℝ) + 1 ≤ v := by exact_mod_cast hlt
+      rw [abs_of_nonpos (by linarith)]; linarith
+    · have hgt : v < u := by omega
+      have h1 : (v:ℝ) + 1 ≤ u := by exact_mod_cast hgt
+      rw [abs_of_nonneg (by linarith)]; linarith
+  have hceq : (round ((u : ℝ) * 2 ^ n / r) : ℝ) = (round ((v : ℝ) * 2 ^ n / r) : ℝ) := by
+    rw [← hvalu, ← hvalv, h]
+  have hau := abs_le.mp (abs_sub_round ((u : ℝ) * 2 ^ n / r))
+  have hav := abs_le.mp (abs_sub_round ((v : ℝ) * 2 ^ n / r))
+  have hsep : (2:ℝ) ≤ |(u : ℝ) * 2 ^ n / r - (v : ℝ) * 2 ^ n / r| := by
+    have hfac : (u : ℝ) * 2 ^ n / r - (v : ℝ) * 2 ^ n / r = ((u:ℝ) - v) * (2 ^ n / r) := by
+      field_simp
+    have hge2 : (2:ℝ) ≤ 2 ^ n / r := by rw [le_div_iff₀ hrR]; linarith
+    rw [hfac, abs_mul, abs_of_pos (by positivity : (0:ℝ) < 2 ^ n / r)]
+    nlinarith [abs_nonneg ((u:ℝ) - v)]
+  have h1 : |(u : ℝ) * 2 ^ n / r - (round ((u : ℝ) * 2 ^ n / r) : ℝ)| ≤ 1 / 2 :=
+    abs_sub_round _
+  have h2 : |(round ((u : ℝ) * 2 ^ n / r) : ℝ) - (v : ℝ) * 2 ^ n / r| ≤ 1 / 2 := by
+    rw [hceq, abs_sub_comm]; exact abs_sub_round _
+  have htri : |(u : ℝ) * 2 ^ n / r - (v : ℝ) * 2 ^ n / r| ≤ 1 :=
+    calc |(u : ℝ) * 2 ^ n / r - (v : ℝ) * 2 ^ n / r|
+        ≤ |(u : ℝ) * 2 ^ n / r - (round ((u : ℝ) * 2 ^ n / r) : ℝ)|
+          + |(round ((u : ℝ) * 2 ^ n / r) : ℝ) - (v : ℝ) * 2 ^ n / r| := abs_sub_le _ _ _
+      _ ≤ 1 / 2 + 1 / 2 := add_le_add h1 h2
+      _ = 1 := by norm_num
+  linarith
+
+/-- **Total measurement probability.** Summed over the `r` good measurements,
+    each picking up all `r - 2 ^ n % r` fitting fibres. -/
+theorem shor_total_prob_ge
+    {N a n m r : ℕ} (hNpos : 0 < N) (hNm : N ≤ 2 ^ m)
+    (hr : is_period a r N) (hrpos : 0 < r) (hsmall : 2 * r ^ 2 ≤ 2 ^ n) :
+    (r : ℝ) * ((r - 2 ^ n % r : ℕ) : ℝ)
+        * (2 * ((2 ^ n / r : ℕ) : ℝ) / (Real.pi * 2 ^ n)) ^ 2
+      ≤ ∑ c ∈ (Finset.range r).image (fun k => encBS n (goodC n r k)),
+          prob_measure_y
+            (app_QFT_prefix (ket_simon n m (modExpFun a N n m hNpos hNm))) c := by
+  have h2n : (0:ℝ) < 2 ^ n := by positivity
+  have hrR : (0:ℝ) < r := by exact_mod_cast hrpos
+  have hrn : r ≤ 2 ^ n := by nlinarith
+  set q := 2 ^ n / r with hq
+  have hqpos : 0 < q := (Nat.one_le_div_iff hrpos).mpr hrn
+  have hqle : r * q ≤ 2 ^ n := Nat.mul_div_le _ _
+  set G := (Finset.range r).image (fun k => encBS n (goodC n r k)) with hG
+  have hinj : Set.InjOn (fun k => encBS n (goodC n r k)) (↑(Finset.range r) : Set ℕ) := by
+    intro u hu v hv h
+    rw [Finset.mem_coe, Finset.mem_range] at hu hv
+    obtain ⟨hfu, -, -⟩ := goodC_spec hrpos hu hsmall
+    obtain ⟨hfv, -, -⟩ := goodC_spec hrpos hv hsmall
+    have hgc : goodC n r u = goodC n r v := by
+      have hc := congrArg BitString.toNat h
+      simpa [encBS_toNat hfu, encBS_toNat hfv] using hc
+    exact goodC_inj hrpos hsmall hu hv hgc
+  have hGcard : G.card = r := by
+    rw [hG, Finset.card_image_of_injOn hinj, Finset.card_range]
+  have hterm : ∀ c ∈ G, ((r - 2 ^ n % r : ℕ) : ℝ) * (2 * (q:ℝ) / (Real.pi * 2 ^ n)) ^ 2
+      ≤ prob_measure_y
+          (app_QFT_prefix (ket_simon n m (modExpFun a N n m hNpos hNm))) c := by
+    intro c hc
+    rw [hG, Finset.mem_image] at hc
+    obtain ⟨k, hk, rfl⟩ := hc
+    rw [Finset.mem_range] at hk
+    obtain ⟨hfit, -, hbound⟩ := goodC_spec hrpos hk hsmall
+    refine shor_prob_measure_ge_multi (k := (k : ℤ)) hNpos hNm hr hrpos hrn _ ?_
+    rw [encBS_toNat hfit]
+    have hkey : ((goodC n r k * r : ℕ) : ℝ) / 2 ^ n - ((k : ℤ) : ℝ)
+        = r * (((goodC n r k : ℕ) : ℝ) / 2 ^ n - (k : ℝ) / r) := by
+      push_cast
+      field_simp
+    rw [hkey, abs_mul, abs_of_pos hrR]
+    calc (r:ℝ) * |((goodC n r k : ℕ) : ℝ) / 2 ^ n - (k : ℝ) / r|
+        ≤ (r:ℝ) * (1 / (2 * 2 ^ n)) := mul_le_mul_of_nonneg_left hbound hrR.le
+      _ ≤ 1 / (2 * (q:ℝ)) := by
+          have hqR : (0:ℝ) < q := by exact_mod_cast hqpos
+          have hprod : (r:ℝ) * q ≤ 2 ^ n := by exact_mod_cast hqle
+          rw [mul_one_div, le_div_iff₀ (by positivity)]
+          field_simp
+          nlinarith
+  calc (r : ℝ) * ((r - 2 ^ n % r : ℕ) : ℝ) * (2 * (q:ℝ) / (Real.pi * 2 ^ n)) ^ 2
+      = (G.card : ℝ) * (((r - 2 ^ n % r : ℕ) : ℝ)
+          * (2 * (q:ℝ) / (Real.pi * 2 ^ n)) ^ 2) := by rw [hGcard]; ring
+    _ ≤ _ := by simpa using Finset.card_nsmul_le_sum G _ _ hterm
+
+/-- **The 4/π² bound.** When the period divides `2 ^ n` every fibre fits and the
+    constant comes out exactly. Without that the fitting fibres number
+    `r - 2 ^ n % r`, which can be as low as `1`, and the bound degrades. -/
+theorem shor_total_prob_ge_pi
+    {N a n m r : ℕ} (hNpos : 0 < N) (hNm : N ≤ 2 ^ m)
+    (hr : is_period a r N) (hrpos : 0 < r) (hsmall : 2 * r ^ 2 ≤ 2 ^ n)
+    (hdvd : r ∣ 2 ^ n) :
+    4 / Real.pi ^ 2
+      ≤ ∑ c ∈ (Finset.range r).image (fun k => encBS n (goodC n r k)),
+          prob_measure_y
+            (app_QFT_prefix (ket_simon n m (modExpFun a N n m hNpos hNm))) c := by
+  have hpi := Real.pi_pos
+  have h2n : (0:ℝ) < 2 ^ n := by positivity
+  have h := shor_total_prob_ge hNpos hNm hr hrpos hsmall
+  have hmod : 2 ^ n % r = 0 := Nat.mod_eq_zero_of_dvd hdvd
+  have hrq : (r:ℝ) * (((2 ^ n / r : ℕ)) : ℝ) = 2 ^ n := by
+    have hc := Nat.div_mul_cancel hdvd
+    have : ((2 ^ n / r : ℕ) : ℝ) * (r:ℝ) = ((2:ℝ) ^ n) := by exact_mod_cast congrArg (Nat.cast : ℕ → ℝ) hc
+    linarith [this, mul_comm (r:ℝ) (((2 ^ n / r : ℕ)) : ℝ)]
+  rw [hmod, Nat.sub_zero] at h
+  refine le_trans (le_of_eq ?_) h
+  have hne : (Real.pi * 2 ^ n) ≠ 0 := by positivity
+  field_simp
+  nlinarith [hrq, sq_nonneg ((r:ℝ) * (((2 ^ n / r : ℕ)) : ℝ))]
