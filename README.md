@@ -16,11 +16,22 @@ the `qseq`, `qchain`, `qsimp` and `qunfold` tactics.
 that any `y` with nonzero measurement probability satisfies `y · s = 0`. `Shor/` has the
 classical reduction from factoring to order-finding and the success-probability bound.
 
+`QFT/` has the quantum half of Shor. The parts are the Fourier orthogonality sum, a lower
+bound of `2M/π` on a geometric sum of `M` unit vectors whose phase is within `1/(2M)` of an
+integer, and the fact that the fibres of the oracle `x ↦ a^x mod N` are the residue classes
+mod the period. `shors_algorithm_end_to_end` puts the three stages together: the
+measurement probability, recovery of the period as a continued-fraction convergent, and the
+factor of `N` that follows.
+
 ## Scope
 
 Gates are defined by their action on amplitudes. Unitarity and normalisation are not proved.
 
-`Shor/` is classical only. There is no QFT and no quantum order-finding circuit.
+The QFT is specified by its action on amplitudes. It is not assembled from gates, and
+neither are the oracles `Uf_DJA` and `Uf_Simon`.
+
+`shors_algorithm_end_to_end` assumes `r * A ≤ 2 ^ n`, which holds when the period divides
+`2 ^ n`. The general case needs a sharper count of the progression.
 
 No tracked file contains `sorry` or `axiom`.
 
