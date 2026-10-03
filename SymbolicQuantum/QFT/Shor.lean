@@ -214,3 +214,85 @@ lemma exists_good_measurement_bitString {n r k : ℕ} (hrpos : 0 < r) (hkr : k <
   rw [hkey, abs_neg, abs_div, abs_of_pos h2n, div_le_iff₀ h2n]
   calc |t - round t| ≤ 1 / 2 := hround
     _ = 1 / (2 * 2 ^ n) * 2 ^ n := by field_simp
+
+/- Summing over fibres: the measurement probability uses all of them, not one. -/
+
+/-- The bitstring carrying a given value, when it fits. Total, so it can be used
+    inside a `Finset.image`. -/
+def encBS (n v : ℕ) : BitString n :=
+  if h : v < 2 ^ n then bitStringEquivFin.symm ⟨v, h⟩ else fun _ => Qubit.zero
+
+@[simp] lemma encBS_toNat {n v : ℕ} (h : v < 2 ^ n) : (encBS n v).toNat = v := by
+  simp [encBS, h, BitString.toNat]
+
+/-- Distinct offsets below the period give distinct oracle values. -/
+lemma modExpFun_inj_on_offsets {N a n m r : ℕ} (hNpos : 0 < N) (hNm : N ≤ 2 ^ m)
+    (hr : is_period a r N) (hrpos : 0 < r) (hrn : r ≤ 2 ^ n)
+    {u v : ℕ} (hu : u < r) (hv : v < r)
+    (h : modExpFun a N n m hNpos hNm (encBS n u)
+       = modExpFun a N n m hNpos hNm (encBS n v)) : u = v := by
+  rw [modExpFun_eq_iff_modEq hNpos hNm hr hrpos, encBS_toNat (by omega),
+    encBS_toNat (by omega)] at h
+  simpa [Nat.mod_eq_of_lt hu, Nat.mod_eq_of_lt hv] using h
+
+/-- The per-fibre bound, as a squared magnitude. -/
+lemma shor_normSq_ge {n m : ℕ} (f : BitString n → BitString m)
+    (c : BitString n) (z : BitString m) {r x₀ A : ℕ} {k : ℤ}
+    (hrpos : 0 < r) (hx₀r : x₀ < r) (hApos : 0 < A)
+    (hfib : ∀ x : BitString n, f x = z ↔ x.toNat % r = x₀)
+    (hA : ∀ j : ℕ, x₀ + j * r < 2 ^ n ↔ j < A)
+    (hδ : |((c.toNat * r : ℕ) : ℝ) / (2 ^ n) - (k : ℝ)| ≤ 1 / (2 * A)) :
+    (2 * A / (Real.pi * 2 ^ n)) ^ 2
+      ≤ Complex.normSq (app_QFT_prefix (ket_simon n m f) (combine c z)) := by
+  have hamp := shor_amplitude_norm_ge f c z hrpos hx₀r hApos hfib hA hδ
+  have hnn : (0:ℝ) ≤ 2 * A / (Real.pi * 2 ^ n) := by positivity
+  calc (2 * A / (Real.pi * 2 ^ n)) ^ 2
+      ≤ ‖app_QFT_prefix (ket_simon n m f) (combine c z)‖ ^ 2 := pow_le_pow_left₀ hnn hamp 2
+    _ = _ := (Complex.normSq_eq_norm_sq _).symm
+
+/-- **Measurement probability over all fibres.** Each of the `r - 2 ^ n % r`
+    fitting offsets contributes its own term to the sum over the second
+    register, so the single-fibre bound improves by that factor. -/
+theorem shor_prob_measure_ge_multi
+    {N a n m r : ℕ} {k : ℤ} (hNpos : 0 < N) (hNm : N ≤ 2 ^ m)
+    (hr : is_period a r N) (hrpos : 0 < r) (hrn : r ≤ 2 ^ n)
+    (c : BitString n)
+    (hδ : |((c.toNat * r : ℕ) : ℝ) / (2 ^ n) - (k : ℝ)|
+            ≤ 1 / (2 * ((2 ^ n / r : ℕ) : ℝ))) :
+    ((r - 2 ^ n % r : ℕ) : ℝ) * (2 * ((2 ^ n / r : ℕ) : ℝ) / (Real.pi * 2 ^ n)) ^ 2
+      ≤ prob_measure_y (app_QFT_prefix (ket_simon n m (modExpFun a N n m hNpos hNm))) c := by
+  set F := modExpFun a N n m hNpos hNm with hF
+  set q := 2 ^ n / r with hq
+  have hqpos : 0 < q := (Nat.one_le_div_iff hrpos).mpr hrn
+  set S : Finset ℕ := Finset.Ico (2 ^ n % r) r with hS
+  have hinj : Set.InjOn (fun v => F (encBS n v)) (↑S : Set ℕ) := by
+    intro u hu v hv h
+    rw [hS, Finset.mem_coe, Finset.mem_Ico] at hu hv
+    exact modExpFun_inj_on_offsets hNpos hNm hr hrpos hrn hu.2 hv.2 h
+  set T : Finset (BitString m) := S.image (fun v => F (encBS n v)) with hT
+  have hTcard : T.card = r - 2 ^ n % r := by
+    rw [hT, Finset.card_image_of_injOn hinj, hS, Nat.card_Ico]
+  have hterm : ∀ z ∈ T, (2 * (q : ℝ) / (Real.pi * 2 ^ n)) ^ 2
+      ≤ Complex.normSq (app_QFT_prefix (ket_simon n m F) (combine c z)) := by
+    intro z hz
+    rw [hT, Finset.mem_image] at hz
+    obtain ⟨v, hvS, rfl⟩ := hz
+    rw [hS, Finset.mem_Ico] at hvS
+    have hvn : v < 2 ^ n := by omega
+    have hfib : ∀ x : BitString n, F x = F (encBS n v) ↔ x.toNat % r = v := by
+      intro x
+      rw [hF, modExpFun_fibre hNpos hNm hr hrpos (encBS n v) x, encBS_toNat hvn,
+        Nat.mod_eq_of_lt hvS.2]
+    have hA : ∀ j : ℕ, v + j * r < 2 ^ n ↔ j < q := by
+      intro j
+      rw [hq]
+      exact progression_count hrpos hvn j |>.trans
+        (by rw [progression_count_fitting hrpos hvS.2 hrn hvS.1 (progression_count hrpos hvn)])
+    exact shor_normSq_ge F c _ hrpos hvS.2 hqpos hfib hA hδ
+  calc ((r - 2 ^ n % r : ℕ) : ℝ) * (2 * (q : ℝ) / (Real.pi * 2 ^ n)) ^ 2
+      = (T.card : ℝ) * (2 * (q : ℝ) / (Real.pi * 2 ^ n)) ^ 2 := by rw [hTcard]
+    _ ≤ ∑ z ∈ T, Complex.normSq (app_QFT_prefix (ket_simon n m F) (combine c z)) := by
+        simpa using Finset.card_nsmul_le_sum T _ _ hterm
+    _ ≤ prob_measure_y (app_QFT_prefix (ket_simon n m F)) c :=
+        Finset.sum_le_sum_of_subset_of_nonneg (Finset.subset_univ T)
+          (fun z _ _ => Complex.normSq_nonneg _)
