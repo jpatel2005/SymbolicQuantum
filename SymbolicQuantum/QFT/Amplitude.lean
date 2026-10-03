@@ -1,5 +1,4 @@
 import SymbolicQuantum.QFT.Orthogonality
-import SymbolicQuantum.QFT.Period
 import SymbolicQuantum.Simon.Defs
 
 /-

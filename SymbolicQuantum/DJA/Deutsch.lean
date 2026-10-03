@@ -1,7 +1,5 @@
 import Mathlib.Data.Real.Sqrt
 import Mathlib.Data.Complex.Basic
-import Mathlib.Algebra.Module.Basic
-import Mathlib.Algebra.Module.Pi
 import SymbolicQuantum.QuantumStates
 import SymbolicQuantum.QuantumEval
 import SymbolicQuantum.QuantumTactics
